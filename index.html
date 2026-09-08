@@ -310,6 +310,14 @@
                 overflow: hidden;
                 touch-action: none;
             }
+            body.space-pan #viewport,
+            body.space-pan #viewport * {
+                cursor: grab;
+            }
+            body.space-pan #viewport.panning,
+            body.space-pan #viewport.panning * {
+                cursor: grabbing;
+            }
             #dotgrid {
                 position: absolute;
                 inset: 0;
@@ -537,18 +545,18 @@
             .badge-live {
                 display: flex;
                 align-items: center;
-                gap: 5px;
+                gap: calc(5px * var(--ts, 1));
                 background: var(--terminal);
                 color: #fff;
                 font-family: var(--mono);
-                font-size: 9px;
+                font-size: calc(9px * var(--ts, 1));
                 letter-spacing: 0.03em;
-                padding: 2px 7px;
-                border-radius: 8px;
+                padding: calc(2px * var(--ts, 1)) calc(7px * var(--ts, 1));
+                border-radius: calc(8px * var(--ts, 1));
             }
             .badge-live .dot {
-                width: 5px;
-                height: 5px;
+                width: calc(5px * var(--ts, 1));
+                height: calc(5px * var(--ts, 1));
                 border-radius: 50%;
                 background: #52d69a;
                 box-shadow: 0 0 0 0 rgba(82, 214, 154, 0.7);
@@ -567,18 +575,18 @@
             }
             .badge-static {
                 font-family: var(--mono);
-                font-size: 9px;
+                font-size: calc(9px * var(--ts, 1));
                 letter-spacing: 0.03em;
                 color: var(--ink-faint);
                 background: var(--bg-canvas);
-                padding: 2px 7px;
-                border-radius: 8px;
+                padding: calc(2px * var(--ts, 1)) calc(7px * var(--ts, 1));
+                border-radius: calc(8px * var(--ts, 1));
                 border: 1px solid var(--border);
             }
             .node-thumb {
                 position: relative;
                 width: 100%;
-                height: calc(100% - 26px);
+                height: calc(100% - 48px);
                 background: #fcfcfa;
                 display: flex;
                 align-items: center;
@@ -610,6 +618,12 @@
                 border-radius: 3px;
                 padding: 1px 3px;
                 margin: -1px -3px;
+                font-size: calc(9.5px * var(--ts, 1));
+                flex: 1 1 auto;
+                min-width: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             .node-label[contenteditable="true"] {
                 background: #fff;
@@ -620,18 +634,19 @@
                 opacity: 0;
                 transition: opacity 0.15s;
                 color: var(--green);
+                font-size: calc(9.5px * var(--ts, 1));
             }
             .node:hover .dive-hint {
                 opacity: 1;
             }
             .node-upload {
-                width: 18px;
-                height: 18px;
-                border-radius: 5px;
+                width: calc(18px * var(--ts, 1));
+                height: calc(18px * var(--ts, 1));
+                border-radius: calc(5px * var(--ts, 1));
                 border: none;
                 background: var(--bg-canvas);
                 color: var(--ink-faint);
-                font-size: 11px;
+                font-size: calc(11px * var(--ts, 1));
                 line-height: 1;
                 cursor: pointer;
                 display: flex;
@@ -644,23 +659,43 @@
                 color: #fff;
             }
             .node-diff {
-                width: 18px;
-                height: 18px;
-                border-radius: 5px;
+                width: calc(18px * var(--ts, 1));
+                height: calc(18px * var(--ts, 1));
+                border-radius: calc(5px * var(--ts, 1));
                 border: none;
                 background: var(--bg-canvas);
                 color: var(--ink-faint);
-                font-size: 11px;
+                font-size: calc(11px * var(--ts, 1));
                 line-height: 1;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
-                margin-left: 4px;
+                margin-left: calc(4px * var(--ts, 1));
             }
             .node-diff:hover {
                 background: var(--terminal);
+                color: #fff;
+            }
+            .node-delete {
+                width: calc(18px * var(--ts, 1));
+                height: calc(18px * var(--ts, 1));
+                border-radius: calc(5px * var(--ts, 1));
+                border: none;
+                background: var(--bg-canvas);
+                color: var(--ink-faint);
+                font-size: calc(11px * var(--ts, 1));
+                line-height: 1;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+                margin-left: calc(4px * var(--ts, 1));
+            }
+            .node-delete:hover {
+                background: var(--red);
                 color: #fff;
             }
 
@@ -720,6 +755,46 @@
             .diff-close {
                 margin-top: 14px;
                 text-align: right;
+            }
+            #confirmModal {
+                position: fixed;
+                inset: 0;
+                z-index: 320;
+                background: rgba(20, 18, 12, 0.55);
+                display: none;
+                align-items: center;
+                justify-content: center;
+            }
+            #confirmModal.open {
+                display: flex;
+            }
+            #confirmInner {
+                width: min(460px, 90vw);
+                background: var(--surface);
+                border-radius: 14px;
+                padding: 20px;
+                box-shadow: 0 30px 60px -10px rgba(0, 0, 0, 0.4);
+            }
+            #confirmTitle {
+                font-family: var(--sans);
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--red);
+                margin-bottom: 8px;
+            }
+            #confirmBody {
+                font-size: 13px;
+                line-height: 1.5;
+                color: var(--ink-dim);
+                margin-bottom: 18px;
+            }
+            #confirmBody strong {
+                color: var(--ink);
+            }
+            .confirm-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
             }
             .node-thumb img {
                 width: 100%;
@@ -827,7 +902,7 @@
                 margin-bottom: 4px;
             }
             .link-card .lk-title {
-                font-size: 12.5px;
+                font-size: calc(12.5px * var(--ts, 1));
                 color: var(--ink);
                 font-weight: 600;
                 margin-bottom: 2px;
@@ -843,6 +918,40 @@
                 border-radius: 3px;
                 padding: 1px 3px;
                 margin: -1px -3px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .image-card .asset-label {
+                font-size: calc(9px * var(--ts, 1));
+                min-width: 0;
+                flex: 1 1 auto;
+            }
+            .image-card .img-upload {
+                width: calc(16px * var(--ts, 1));
+                height: calc(16px * var(--ts, 1));
+                border: none;
+                border-radius: calc(4px * var(--ts, 1));
+                background: none;
+                color: var(--ink-faint);
+                font-size: calc(11px * var(--ts, 1));
+                line-height: 1;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+                margin-left: calc(5px * var(--ts, 1));
+            }
+            .image-card .img-upload:hover {
+                background: var(--terminal);
+                color: #fff;
+            }
+            .image-card .img-empty {
+                color: var(--ink-faint);
+                font-family: var(--mono);
+                font-size: calc(10px * var(--ts, 1));
+                opacity: 0.6;
             }
             .asset-label[contenteditable="true"] {
                 background: #fff;
@@ -859,11 +968,43 @@
                 font-size: 13.5px;
                 line-height: 1.45;
                 color: var(--ink);
+                overflow: visible;
             }
-            .text-card:hover,
-            .text-card.selected {
+.text-card:hover,
+.text-card.selected {
                 border-color: var(--border-strong);
                 background: rgba(255, 255, 255, 0.6);
+            }
+            .text-card.selected {
+                outline: 2px solid var(--terminal);
+                outline-offset: 2px;
+            }
+            .asset-delete {
+                position: absolute;
+                top: -8px;
+                right: -8px;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: var(--red);
+                color: #fff;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                border: 1px solid #fff;
+                box-shadow: 0 2px 6px rgba(20, 18, 12, 0.25);
+                z-index: 5;
+            }
+            .asset-delete::before {
+                content: "×";
+                font-size: 12px;
+                line-height: 1;
+                font-family: var(--mono);
+            }
+            .text-card:hover .asset-delete,
+            .text-card.selected .asset-delete {
+                display: flex;
             }
             .text-card[contenteditable="true"]:focus {
                 outline: none;
@@ -872,8 +1013,15 @@
             }
 
             /* pins */
-            .pin {
+            .pin-group {
                 position: absolute;
+                display: flex;
+                align-items: flex-start;
+                transform-origin: 12.5px 12.5px;
+                transform: scale(var(--ts, 1));
+                z-index: 5;
+            }
+            .pin {
                 width: 25px;
                 height: 25px;
                 border-radius: 50%;
@@ -885,8 +1033,8 @@
                 font-weight: 700;
                 color: #fff;
                 cursor: pointer;
-                z-index: 5;
                 box-shadow: 0 2px 6px rgba(20, 18, 12, 0.3);
+                transform: scale(1);
                 transition: transform 0.12s;
                 touch-action: none;
                 user-select: none;
@@ -967,12 +1115,12 @@
             }
             .frame-label .ft {
                 font-family: var(--mono);
-                font-size: 10px;
+                font-size: calc(10px * var(--ts, 1));
                 color: var(--ink-dim);
                 background: var(--surface);
                 border: 1px solid var(--border-strong);
-                border-radius: 6px;
-                padding: 3px 8px;
+                border-radius: calc(6px * var(--ts, 1));
+                padding: calc(3px * var(--ts, 1)) calc(8px * var(--ts, 1));
                 cursor: text;
             }
             .frame-label .fc {
@@ -1010,18 +1158,31 @@
             }
             .frame-collapsed-card .ft {
                 font-family: var(--mono);
-                font-size: 11px;
+                font-size: calc(11px * var(--ts, 1));
                 color: var(--ink);
                 cursor: text;
             }
             .frame-collapsed-card .fc {
                 font-family: var(--mono);
-                font-size: 10px;
+                font-size: calc(10px * var(--ts, 1));
                 color: var(--ink-faint);
                 cursor: pointer;
             }
             .frame-collapsed-card .fc:hover {
                 color: var(--ink);
+            }
+            .frame-box.selected {
+                outline: 2px solid var(--terminal);
+                outline-offset: 3px;
+                border-radius: 12px;
+            }
+            .frame-box.collapsed.selected {
+                outline: none;
+            }
+            .frame-box.collapsed.selected .frame-collapsed-card {
+                outline: 2px solid var(--terminal);
+                outline-offset: 3px;
+                border-radius: 12px;
             }
 
             #presentBar {
@@ -1059,7 +1220,10 @@
             }
 
             .sprintchip {
-                position: absolute;
+                position: relative;
+                margin-left: 8px;
+                margin-top: -4px;
+                align-self: flex-start;
                 font-family: var(--mono);
                 font-size: 9px;
                 letter-spacing: 0.03em;
@@ -1068,6 +1232,7 @@
                 border: 1px solid var(--border);
                 padding: 3px 7px;
                 border-radius: 10px;
+                white-space: nowrap;
                 z-index: 4;
             }
             .chip-ado-link {
@@ -1341,6 +1506,12 @@
                 border-color: var(--terminal);
                 color: #fff;
             }
+            .pc-btn.danger {
+                background: var(--red);
+                border-color: var(--red);
+                color: #fff;
+                margin-right: auto;
+            }
             #pcThread {
                 max-height: 120px;
                 overflow-y: auto;
@@ -1532,6 +1703,7 @@
                 <div
                     id="presence"
                     title="Who's here (simulated for this prototype)"
+                    style="display: none"
                 ></div>
                 <div id="searchWrap">
                     <input
@@ -1578,6 +1750,26 @@
                             <path d="M14 4v5h5" />
                             <path d="M12 12v6" />
                             <path d="M9 15h6" />
+                        </svg>
+                    </div>
+                    <div
+                        class="topbtn icon-only"
+                        id="clearCanvasBtn"
+                        title="Clear this canvas"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            width="16"
+                            height="16"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M4 7h16" />
+                            <path d="M9 7V4h6v3" />
+                            <path d="M6 7l1 13h10l1-13" />
                         </svg>
                     </div>
                     <div class="topbtn icon-only" id="mapBtn" title="Sitemap">
@@ -1975,6 +2167,13 @@
                     + Link an Azure DevOps story
                 </div>
                 <div class="pc-actions">
+                    <div
+                        class="pc-btn danger"
+                        id="pcDeletePin"
+                        style="display: none"
+                    >
+                        Delete
+                    </div>
                     <div class="pc-btn" id="pcCancel">Cancel</div>
                     <div class="pc-btn primary" id="pcSave">Save pin</div>
                 </div>
@@ -2022,6 +2221,17 @@
                     </div>
                     <div class="diff-close">
                         <div class="pc-btn" id="diffCloseBtn">Close</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="confirmModal">
+                <div id="confirmInner">
+                    <div id="confirmTitle"></div>
+                    <div id="confirmBody"></div>
+                    <div class="confirm-actions">
+                        <div class="pc-btn" id="confirmCancel">Cancel</div>
+                        <div class="pc-btn danger" id="confirmDone">Delete</div>
                     </div>
                 </div>
             </div>
@@ -2080,12 +2290,26 @@
                 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNncm90c3p6aXNmZGpzcGVueWpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTI5ODksImV4cCI6MjA5Nzk4ODk4OX0._JHMIke-mnXzRao_3LEx-txiHD28kRmS9uzP_sKLw54"; // the long "anon public" key, NOT the service_role key
             let sb = null;
             let cloudSaveTimer = null;
+            let lastSavedJson = null;
+
+            function canon(obj) {
+                if (Array.isArray(obj))
+                    return JSON.stringify(obj.map((o) => canon(o)));
+                if (obj && typeof obj === "object") {
+                    const out = {};
+                    for (const k of Object.keys(obj).sort())
+                        out[k] = canon(obj[k]);
+                    return JSON.stringify(out);
+                }
+                return JSON.stringify(obj);
+            }
 
             function scheduleCloudSave() {
                 if (!sb) return;
                 clearTimeout(cloudSaveTimer);
                 cloudSaveTimer = setTimeout(async () => {
                     try {
+                        lastSavedJson = canon(tree);
                         await sb
                             .from("boards")
                             .upsert({
@@ -2112,14 +2336,12 @@
                         },
                         (payload) => {
                             const remote = payload.new && payload.new.data;
-                            if (
-                                remote &&
-                                JSON.stringify(remote) !== JSON.stringify(tree)
-                            ) {
-                                tree = remote;
-                                if (!pathValid(path)) path = ["root"];
-                                render();
-                            }
+                            if (!remote) return;
+                            const rj = canon(remote);
+                            if (rj === lastSavedJson || rj === canon(tree)) return;
+                            tree = remote;
+                            if (!pathValid(path)) path = ["root"];
+                            render();
                         },
                     )
                     .subscribe();
@@ -2132,6 +2354,7 @@
                     );
                     applyIcons();
                     render();
+                    fitToContent();
                     return;
                 }
                 try {
@@ -2163,6 +2386,8 @@
                 }
                 applyIcons();
                 render();
+                lastSavedJson = canon(tree);
+                fitToContent();
                 subscribeRealtime();
             }
 
@@ -2196,6 +2421,8 @@
                 exportIcon: "⤓",
                 newBoard:
                     '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h9l5 5v11H5z"/><path d="M14 4v5h5"/><path d="M12 12v6"/><path d="M9 15h6"/></svg>',
+                clearCanvas:
+                    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></svg>',
                 sitemap: "⊞",
             };
             function applyIcons() {
@@ -2214,6 +2441,7 @@
                     presentBtn: "present",
                     exportBtn: "exportIcon",
                     newBoardBtn: "newBoard",
+                    clearCanvasBtn: "clearCanvas",
                     mapBtn: "sitemap",
                 };
                 Object.entries(idToIcon).forEach(([id, key]) => {
@@ -2623,6 +2851,64 @@
                 selectedDrawingCv = null;
                 render();
             }
+            function removeItemFromCanvas(cv, o) {
+                const ni = cv.nodes.indexOf(o);
+                if (ni > -1) {
+                    cv.nodes.splice(ni, 1);
+                    if (o.childId && cv.children && cv.children[o.childId])
+                        delete cv.children[o.childId];
+                }
+                const ai = (cv.assets || []).indexOf(o);
+                if (ai > -1) cv.assets.splice(ai, 1);
+                const pi = (cv.pins || []).indexOf(o);
+                if (pi > -1) cv.pins.splice(pi, 1);
+                const fi = (cv.frames || []).indexOf(o);
+                if (fi > -1) cv.frames.splice(fi, 1);
+            }
+            async function deleteSelection() {
+                const cv = getCanvas(path);
+                const items = [];
+                if (multiSelected.size > 0) {
+                    items.push(...multiSelected);
+                } else if (
+                    selectedData &&
+                    (cv.nodes.includes(selectedData) ||
+                        (cv.assets || []).includes(selectedData) ||
+                        (cv.pins || []).includes(selectedData) ||
+                        (cv.frames || []).includes(selectedData))
+                ) {
+                    items.push(selectedData);
+                }
+                if (items.length === 0) {
+                    deleteSelectedDrawing();
+                    return;
+                }
+                const screens = items.filter(
+                    (o) =>
+                        cv.nodes.includes(o) &&
+                        o.childId &&
+                        cv.children &&
+                        cv.children[o.childId],
+                );
+                if (screens.length) {
+                    const plural = screens.length > 1 ? "s" : "";
+                    const ok = await showConfirm({
+                        title: `Delete screen${plural}?`,
+                        bodyHtml:
+                            screenWarningHtml(screens, cv) +
+                            " You can Undo afterwards.",
+                        confirmLabel: "Delete",
+                    });
+                    if (!ok) return;
+                }
+                pushUndo();
+                items.forEach((o) => removeItemFromCanvas(cv, o));
+                multiSelected.clear();
+                selectedEl = null;
+                selectedData = null;
+                if (!pathValid(path)) path = ["root"];
+                render();
+            }
 
             function getCanvas(p) {
                 let node = tree;
@@ -2632,8 +2918,14 @@
                 return node;
             }
             function applyTransform() {
-                document.getElementById("canvasLayer").style.transform =
+                const layerEl = document.getElementById("canvasLayer");
+                layerEl.style.transform =
                     `translate(${panX}px,${panY}px) scale(${zoom})`;
+                layerEl.style.setProperty("--zoom", zoom);
+                layerEl.style.setProperty(
+                    "--ts",
+                    Math.pow(zoom, 0.25) / zoom,
+                );
                 document.getElementById("zoomlabel").textContent =
                     Math.round(zoom * 100) + "%";
             }
@@ -2689,6 +2981,81 @@
                     () => canvasLayerEl.classList.remove("zoom-anim"),
                     460,
                 );
+            }
+
+            function fitToContent() {
+                const cv = getCanvas(path);
+                let minX = Infinity,
+                    minY = Infinity,
+                    maxX = -Infinity,
+                    maxY = -Infinity;
+                const addRect = (x, y, w, h) => {
+                    if (x < minX) minX = x;
+                    if (y < minY) minY = y;
+                    if (x + w > maxX) maxX = x + w;
+                    if (y + h > maxY) maxY = y + h;
+                };
+                (cv.nodes || []).forEach((n) =>
+                    addRect(n.x, n.y, n.w || 180, n.h || 185),
+                );
+                (cv.assets || []).forEach((a) => {
+                    if (a.type === "text")
+                        addRect(a.x, a.y, a.w || 200, a._measuredH || 30);
+                    else if (a.type === "image")
+                        addRect(a.x, a.y, a.w || 200, a.h || 150);
+                    else addRect(a.x, a.y, 200, 70);
+                });
+                (cv.pins || []).forEach((p) =>
+                    addRect(p.x - 12.5, p.y - 12.5, 25, 25),
+                );
+                (cv.drawings || []).forEach((d) => {
+                    if (!d.points || !d.points.length) return;
+                    let lx = Infinity,
+                        ly = Infinity,
+                        hx = -Infinity,
+                        hy = -Infinity;
+                    d.points.forEach((p) => {
+                        if (p.x < lx) lx = p.x;
+                        if (p.y < ly) ly = p.y;
+                        if (p.x > hx) hx = p.x;
+                        if (p.y > hy) hy = p.y;
+                    });
+                    addRect(lx, ly, hx - lx, hy - ly);
+                });
+                (cv.frames || []).forEach((f) =>
+                    addRect(
+                        f.x,
+                        f.y,
+                        f.collapsed ? 200 : f.w || 260,
+                        f.collapsed ? 50 : f.h || 160,
+                    ),
+                );
+                if (!isFinite(minX) || !isFinite(minY)) {
+                    zoom = 1;
+                    panX = 0;
+                    panY = 0;
+                    applyTransform();
+                    return;
+                }
+                const cw = Math.max(maxX - minX, 1),
+                    ch = Math.max(maxY - minY, 1);
+                const vp = viewportEl.getBoundingClientRect();
+                const padX = vp.width * 0.08,
+                    padY = vp.height * 0.1;
+                const newZoom = Math.max(
+                    0.4,
+                    Math.min(
+                        8,
+                        Math.min(
+                            (vp.width - padX * 2) / cw,
+                            (vp.height - padY * 2) / ch,
+                        ),
+                    ),
+                );
+                zoom = newZoom;
+                panX = vp.width / 2 - (minX + cw / 2) * newZoom;
+                panY = vp.height / 2 - (minY + ch / 2) * newZoom;
+                applyTransform();
             }
 
             /* ============================================================ RENDER ============================================================ */
@@ -3081,6 +3448,11 @@
                         f.collapsed = !f.collapsed;
                         render();
                     });
+                    if (selectedData === f) fb.classList.add("selected");
+                    fb.addEventListener("click", (ev) => {
+                        ev.stopPropagation();
+                        selectNode(fb, f);
+                    });
                     nodesLayer.appendChild(fb);
                 });
 
@@ -3100,9 +3472,10 @@
               : `<span class="badge-static badge-edit">FROZEN · ${n.version}</span>`
       }
         <button class="node-upload" title="Set jump screen image">⤓</button>
+        <button class="node-delete" title="Delete screen">✕</button>
         ${n.versions && n.versions.length > 1 ? `<button class="node-diff" title="Compare versions">⇄</button>` : ""}
       </div>
-      <div class="node-thumb">${n.thumb ? `<img src="${n.thumb}" alt="${n.label}">` : fakeThumb()}</div>
+      <div class="node-thumb">${n.thumb ? `<img src="${n.thumb}" alt="${n.label}" draggable="false">` : fakeThumb()}</div>
       <div class="node-foot"><span class="node-label" title="Double-click to rename">${n.label}</span><span class="dive-hint">dive in ⤵</span></div>`;
                     attachDragSelect(el, n);
                     attachConnectorAnchors(el, n);
@@ -3120,6 +3493,17 @@
                         (e) => {
                             e.stopPropagation();
                             openImagePicker(n);
+                        },
+                    );
+                    el.querySelector(".node-delete").addEventListener(
+                        "pointerdown",
+                        (e) => e.stopPropagation(),
+                    );
+                    el.querySelector(".node-delete").addEventListener(
+                        "click",
+                        (e) => {
+                            e.stopPropagation();
+                            openDeleteScreenDialog(n);
                         },
                     );
                     const diffBtn = el.querySelector(".node-diff");
@@ -3191,6 +3575,24 @@
                             a.text = el.textContent;
                             render();
                         });
+                        const del = document.createElement("div");
+                        del.className = "asset-delete";
+                        del.title = "Delete text";
+                        del.setAttribute("aria-hidden", "true");
+                        del.addEventListener("pointerdown", (e) =>
+                            e.stopPropagation(),
+                        );
+                        del.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            pushUndo();
+                            const cv = getCanvas(path);
+                            const idx = (cv.assets || []).indexOf(a);
+                            if (idx > -1) cv.assets.splice(idx, 1);
+                            selectedData = null;
+                            selectedEl = null;
+                            render();
+                        });
+                        el.appendChild(del);
                     } else if (a.type === "image") {
                         el = document.createElement("div");
                         el.className = "asset-card image-card";
@@ -3198,18 +3600,15 @@
                         el.style.top = a.y + "px";
                         el.style.width = (a.w || 200) + "px";
                         el.style.height = (a.h || 150) + "px";
-                        el.innerHTML = `<div class="img-body">${a.thumb ? `<img src="${a.thumb}" alt="${a.label}">` : "▣ click to choose an image"}</div><div class="img-foot"><span class="asset-label" title="Double-click to rename">${a.label || "Untitled asset"}</span></div>`;
-                        el.querySelector(".img-body").addEventListener(
-                            "pointerdown",
-                            (e) => e.stopPropagation(),
+                        el.innerHTML = `<div class="img-body">${a.thumb ? `<img src="${a.thumb}" alt="${a.label}" draggable="false">` : '<span class="img-empty">no image</span>'}</div><div class="img-foot"><span class="asset-label" title="Double-click to rename">${a.label || "Untitled asset"}</span><button class="img-upload" title="Upload image">⤓</button></div>`;
+                        const uploadBtn = el.querySelector(".img-upload");
+                        uploadBtn.addEventListener("pointerdown", (e) =>
+                            e.stopPropagation(),
                         );
-                        el.querySelector(".img-body").addEventListener(
-                            "click",
-                            (e) => {
-                                e.stopPropagation();
-                                openImagePicker(a);
-                            },
-                        );
+                        uploadBtn.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            openImagePicker(a);
+                        });
                         const imgLabelEl = el.querySelector(".asset-label");
                         imgLabelEl.addEventListener("pointerdown", (e) =>
                             e.stopPropagation(),
@@ -3281,13 +3680,15 @@
 
                 cv.pins.forEach((p) => {
                     if (hiddenRefs.has(p)) return;
+                    const group = document.createElement("div");
+                    group.className = "pin-group";
+                    group.style.left = p.x + "px";
+                    group.style.top = p.y + "px";
                     const el = document.createElement("div");
                     el.className =
                         "pin " +
                         pinColor(p.type, p.status) +
                         (multiSelected.has(p) ? " multi-selected" : "");
-                    el.style.left = p.x + "px";
-                    el.style.top = p.y + "px";
                     el.textContent = pinGlyph(p);
                     el.title = p.note;
                     if (overlayMode === "sprint") {
@@ -3303,19 +3704,18 @@
                     }
                     attachPinDrag(el, p);
                     domByObj.set(p, el);
-                    nodesLayer.appendChild(el);
+                    group.appendChild(el);
 
                     const chip = document.createElement("div");
                     chip.className = "sprintchip";
-                    chip.style.left = p.x + 30 + "px";
-                    chip.style.top = p.y + 4 + "px";
                     const typeLabel =
                         p.type.charAt(0).toUpperCase() + p.type.slice(1);
                     const adoHtml = p.ado
                         ? ` · <a href="${p.ado.url || "#"}" target="_blank" rel="noopener" class="chip-ado-link">#${p.ado.id.replace("#", "")}</a>`
                         : "";
                     chip.innerHTML = `${typeLabel} · ${p.sprint}${adoHtml}`;
-                    nodesLayer.appendChild(chip);
+                    group.appendChild(chip);
+                    nodesLayer.appendChild(group);
                 });
 
                 function ptInCollapsedFrame(pt) {
@@ -3578,9 +3978,88 @@
                 diffModal.classList.add("open");
             }
 
+            /* ---- confirm dialog (warning for destructive deletes) ---- */
+            const confirmModal = document.getElementById("confirmModal");
+            let confirmResolve = null;
+            function showConfirm({ title, bodyHtml, confirmLabel }) {
+                document.getElementById("confirmTitle").textContent =
+                    title || "Are you sure?";
+                document.getElementById("confirmBody").innerHTML =
+                    bodyHtml || "";
+                document.getElementById("confirmDone").textContent =
+                    confirmLabel || "Delete";
+                confirmModal.classList.add("open");
+                return new Promise((resolve) => {
+                    confirmResolve = resolve;
+                });
+            }
+            function dismissConfirm(result) {
+                confirmModal.classList.remove("open");
+                if (confirmResolve) {
+                    confirmResolve(result);
+                    confirmResolve = null;
+                }
+            }
+            document.getElementById("confirmCancel").onclick = () =>
+                dismissConfirm(false);
+            document.getElementById("confirmDone").onclick = () =>
+                dismissConfirm(true);
+            confirmModal.addEventListener("click", (e) => {
+                if (e.target === confirmModal) dismissConfirm(false);
+            });
+            function countNestedScreens(canvas) {
+                let count = 0;
+                Object.values(canvas.children || {}).forEach((c) => {
+                    count += 1 + countNestedScreens(c);
+                });
+                return count;
+            }
+            function screenWarningHtml(screens, cv) {
+                const names = screens
+                    .map((s) => `<strong>"${s.label}"</strong>`)
+                    .join(", ");
+                if (
+                    screens.length === 1 &&
+                    screens[0].childId &&
+                    cv.children &&
+                    cv.children[screens[0].childId]
+                ) {
+                    const child = cv.children[screens[0].childId];
+                    const nested = 1 + countNestedScreens(child);
+                    return `Deleting ${names} permanently removes it and the <strong>${nested}</strong> screen${nested === 1 ? "" : "s"} nested inside it (the "${child.title}" canvas and everything on it).`;
+                }
+                const plural = screens.length > 1 ? "s" : "";
+                return `Deleting ${names} permanently removes the screen${plural} and everything nested inside ${screens.length > 1 ? "them" : "it"}.`;
+            }
+            function removeScreen(n) {
+                const cv = getCanvas(path);
+                pushUndo();
+                removeItemFromCanvas(cv, n);
+                multiSelected.delete(n);
+                if (selectedData === n) {
+                    selectedData = null;
+                    selectedEl = null;
+                }
+                if (!pathValid(path)) path = ["root"];
+                render();
+            }
+            async function openDeleteScreenDialog(n) {
+                const ok = await showConfirm({
+                    title: "Delete this jump screen?",
+                    bodyHtml:
+                        screenWarningHtml([n], getCanvas(path)) +
+                        " You can Undo afterwards.",
+                    confirmLabel: "Delete screen",
+                });
+                if (ok) removeScreen(n);
+            }
+
             /* ---- screenshot upload ---- */
             const imgFileInput = document.getElementById("imgFileInput");
             let imageUploadTarget = null;
+            document.addEventListener("dragstart", (e) => {
+                if (e.target && e.target.tagName === "IMG") e.preventDefault();
+            });
             function openImagePicker(node) {
                 imageUploadTarget = node;
                 imgFileInput.value = "";
@@ -3603,8 +4082,8 @@
                             const ratio = img.naturalHeight / img.naturalWidth;
                             target.w = w;
                             target.h = Math.max(
-                                70,
-                                Math.min(560, Math.round(w * ratio) + 26),
+                                104,
+                                Math.min(584, Math.round(w * ratio) + 48),
                             );
                             target.versions = target.versions || [];
                             target.versions.push({
@@ -3650,6 +4129,7 @@
                 });
                 el.addEventListener("pointerdown", (e) => {
                     if (e.metaKey || e.ctrlKey) return; // handled by the click listener above
+                    if (e.shiftKey && currentTool === "select") return; // shift-drag → box select
                     if (["pen", "highlight", "arrow"].includes(currentTool))
                         return; // those tools draw on top instead
                     e.stopPropagation();
@@ -3680,21 +4160,14 @@
                                     go.obj.y = snapVal(go.y + dy);
                                     const memberEl = domByObj.get(go.obj);
                                     if (memberEl) {
-                                        memberEl.style.left = go.obj.x + "px";
-                                        memberEl.style.top = go.obj.y + "px";
-                                        if (
-                                            memberEl.classList.contains(
-                                                "pin",
-                                            ) &&
-                                            memberEl.nextElementSibling &&
-                                            memberEl.nextElementSibling.classList.contains(
-                                                "sprintchip",
-                                            )
-                                        ) {
-                                            memberEl.nextElementSibling.style.left =
-                                                go.obj.x + 30 + "px";
-                                            memberEl.nextElementSibling.style.top =
-                                                go.obj.y + 4 + "px";
+                                        if (memberEl.classList.contains("pin") && memberEl.parentElement) {
+                                            memberEl.parentElement.style.left =
+                                                go.obj.x + "px";
+                                            memberEl.parentElement.style.top =
+                                                go.obj.y + "px";
+                                        } else {
+                                            memberEl.style.left = go.obj.x + "px";
+                                            memberEl.style.top = go.obj.y + "px";
                                         }
                                     }
                                 });
@@ -3711,7 +4184,7 @@
                         el.removeEventListener("pointerup", onUp);
                         el.removeEventListener("pointercancel", onUp);
                         if (!moved) {
-                            if (!isGroupDrag) selectNode(el);
+                            if (!isGroupDrag) selectNode(el, dataObj);
                         } else {
                             commitUndo(preSnap);
                             render();
@@ -3722,9 +4195,10 @@
                     el.addEventListener("pointercancel", onUp);
                 });
             }
-            function selectNode(el) {
+            function selectNode(el, dataObj) {
                 if (selectedEl) selectedEl.classList.remove("selected");
                 selectedEl = el;
+                selectedData = dataObj || null;
                 el.classList.add("selected");
             }
             function attachArrowHandleDrag(h, dr, which) {
@@ -3782,6 +4256,7 @@
                 });
                 el.addEventListener("pointerdown", (e) => {
                     if (e.metaKey || e.ctrlKey) return; // handled by the click listener above
+                    if (e.shiftKey && currentTool === "select") return; // shift-drag → box select
                     if (["pen", "highlight", "arrow"].includes(currentTool))
                         return; // those tools draw on top instead
                     e.stopPropagation();
@@ -3801,7 +4276,7 @@
                           }))
                         : null;
                     let moved = false;
-                    const chip = el.nextElementSibling; // sprint chip rendered immediately after the pin
+                    const group = el.parentElement; // pin-group renders the pin + sprint chip together
                     const onMove = (ev) => {
                         const dx = (ev.clientX - startClientX) / zoom,
                             dy = (ev.clientY - startClientY) / zoom;
@@ -3813,36 +4288,25 @@
                                     go.obj.y = snapVal(go.y + dy);
                                     const memberEl = domByObj.get(go.obj);
                                     if (memberEl) {
-                                        memberEl.style.left = go.obj.x + "px";
-                                        memberEl.style.top = go.obj.y + "px";
-                                        if (
-                                            memberEl.classList.contains(
-                                                "pin",
-                                            ) &&
-                                            memberEl.nextElementSibling &&
-                                            memberEl.nextElementSibling.classList.contains(
-                                                "sprintchip",
-                                            )
-                                        ) {
-                                            memberEl.nextElementSibling.style.left =
-                                                go.obj.x + 30 + "px";
-                                            memberEl.nextElementSibling.style.top =
-                                                go.obj.y + 4 + "px";
+                                        if (memberEl.parentElement) {
+                                            memberEl.parentElement.style.left =
+                                                go.obj.x + "px";
+                                            memberEl.parentElement.style.top =
+                                                go.obj.y + "px";
+                                        } else {
+                                            memberEl.style.left =
+                                                go.obj.x + "px";
+                                            memberEl.style.top = go.obj.y + "px";
                                         }
                                     }
                                 });
                             } else {
                                 p.x = snapVal(origX + dx);
                                 p.y = snapVal(origY + dy);
-                                el.style.left = p.x + "px";
-                                el.style.top = p.y + "px";
-                                if (
-                                    chip &&
-                                    chip.classList.contains("sprintchip")
-                                ) {
-                                    chip.style.left = p.x + 30 + "px";
-                                    chip.style.top = p.y + 4 + "px";
-                                }
+                                group.style.left = p.x + "px";
+                                group.style.top = p.y + "px";
+                                el.style.left = "0px";
+                                el.style.top = "0px";
                             }
                         }
                     };
@@ -3979,6 +4443,7 @@
             }
             function openPinCard(clientX, clientY, p) {
                 pendingPin = { existing: p, mode: "view" };
+                document.getElementById("pcDeletePin").style.display = "block";
                 document.getElementById("pcType").value = p.type;
                 populateSprintSelect(p.sprint);
                 document.getElementById("pcNoteLabel").textContent = "Comments";
@@ -4000,6 +4465,22 @@
             }
             document.getElementById("pcCancel").onclick = () => {
                 pinCard.classList.remove("open");
+            };
+            document.getElementById("pcDeletePin").onclick = () => {
+                if (!pendingPin || !pendingPin.existing) return;
+                if (
+                    !window.confirm(
+                        'Delete this pin and its comment thread?',
+                    )
+                )
+                    return;
+                pushUndo();
+                const cv = getCanvas(path);
+                const idx = cv.pins.indexOf(pendingPin.existing);
+                if (idx > -1) cv.pins.splice(idx, 1);
+                pinCard.classList.remove("open");
+                pendingPin = null;
+                render();
             };
             document.getElementById("pcAddComment").onclick = () => {
                 if (!pendingPin || !pendingPin.existing) return;
@@ -4196,17 +4677,47 @@
                     doRedo();
                     return;
                 }
-                if (
-                    (e.key === "Delete" || e.key === "Backspace") &&
-                    selectedDrawing
-                ) {
+                if (e.key === "Delete" || e.key === "Backspace") {
+                    if (confirmModal.classList.contains("open")) return;
                     e.preventDefault();
-                    deleteSelectedDrawing();
+                    deleteSelection();
                     return;
                 }
                 if (e.metaKey || e.ctrlKey || e.altKey) return;
                 if (TOOL_SHORTCUTS[e.key])
                     selectToolByName(TOOL_SHORTCUTS[e.key]);
+            });
+            function isTypingTarget(t) {
+                return (
+                    t &&
+                    (["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) ||
+                        t.isContentEditable)
+                );
+            }
+            window.addEventListener("keydown", (e) => {
+                if (e.code !== "Space") return;
+                if (isTypingTarget(e.target)) return;
+                e.preventDefault();
+                if (!spaceHeld) {
+                    spaceHeld = true;
+                    document.body.classList.add("space-pan");
+                }
+            });
+            window.addEventListener("keyup", (e) => {
+                if (e.code !== "Space") return;
+                if (isTypingTarget(e.target)) return;
+                e.preventDefault();
+                if (spaceHeld) {
+                    spaceHeld = false;
+                    document.body.classList.remove("space-pan");
+                }
+            });
+            window.addEventListener("blur", () => {
+                if (spaceHeld) {
+                    spaceHeld = false;
+                    document.body.classList.remove("space-pan");
+                    viewportEl.classList.remove("panning");
+                }
             });
             document.querySelectorAll("#penSwatches .swatch").forEach((s) => {
                 s.addEventListener("click", () => {
@@ -4249,6 +4760,7 @@
             const viewportEl = document.getElementById("viewport");
 
             viewportEl.addEventListener("click", (e) => {
+                if (Date.now() - lastLassoAt < 250) return;
                 if (
                     e.target.closest(
                         ".node, .asset-card, .pin, .sprintchip, .sticky, .arrow-handle, #toolbar, #zoomctl",
@@ -4378,6 +4890,7 @@
                     "none";
                 document.getElementById("pcAdoBlock").style.display = "none";
                 document.getElementById("pcAdoLinkBtn").style.display = "block";
+                document.getElementById("pcDeletePin").style.display = "none";
                 openCardAt(e.clientX, e.clientY);
             });
 
@@ -4392,6 +4905,8 @@
                 drawPoints = [];
             let panStart = null,
                 pinchStart = null;
+            let lastLassoAt = 0;
+            let spaceHeld = false;
 
             function ptDist(a, b) {
                 return Math.hypot(a.x - b.x, a.y - b.y);
@@ -4400,11 +4915,34 @@
                 return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
             }
 
+            viewportEl.addEventListener(
+                "pointerdown",
+                (e) => {
+                    if (!spaceHeld) return;
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                    try {
+                        viewportEl.setPointerCapture(e.pointerId);
+                    } catch (err) {}
+                    mode = "pan";
+                    panStart = {
+                        x: e.clientX,
+                        y: e.clientY,
+                        panX0: panX,
+                        panY0: panY,
+                    };
+                    viewportEl.classList.add("panning");
+                },
+                true,
+            );
+
             viewportEl.addEventListener("pointerdown", (e) => {
                 const onInteractive = e.target.closest(
                     ".node, .asset-card, .pin",
                 );
-                if (onInteractive && currentTool === "select") return; // select tool: let the item handle its own drag
+                if (onInteractive && currentTool === "select" && !e.shiftKey)
+                    return; // select tool: let the item handle its own drag
                 pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
                 try {
                     viewportEl.setPointerCapture(e.pointerId);
@@ -4493,7 +5031,10 @@
                     drawTempEl.style.width = "0px";
                     drawTempEl.style.height = "0px";
                     nodesLayer.appendChild(drawTempEl);
-                } else if (currentTool === "lasso") {
+                } else if (
+                    currentTool === "lasso" ||
+                    (currentTool === "select" && e.shiftKey)
+                ) {
                     mode = "lasso";
                     const pt = screenToCanvas(e.clientX, e.clientY);
                     drawPoints = [pt, pt];
@@ -4524,7 +5065,7 @@
                     const d = ptDist(pts[0], pts[1]);
                     const newZoom = Math.min(
                         8,
-                        Math.max(0.4, pinchStart.zoom0 * (d / pinchStart.d)),
+                        Math.max(0.4, pinchStart.zoom0 * Math.pow(d / pinchStart.d, 1.35)),
                     );
                     const rect = viewportEl.getBoundingClientRect();
                     const midCanvasX =
@@ -4587,6 +5128,8 @@
                 try {
                     viewportEl.releasePointerCapture(e.pointerId);
                 } catch (err) {}
+                if (pointers.size === 0)
+                    viewportEl.classList.remove("panning");
 
                 if (mode === "draw" && pointers.size === 0) {
                     const cv = getCanvas(path);
@@ -4683,6 +5226,7 @@
                     }
                     setActiveTool("select");
                     render();
+                    lastLassoAt = Date.now();
                 }
 
                 if (pointers.size < 2) pinchStart = null;
@@ -4709,7 +5253,7 @@
                 (e) => {
                     e.preventDefault();
                     if (e.ctrlKey || e.metaKey) {
-                        const delta = -e.deltaY * 0.0015;
+                        const delta = -e.deltaY * 0.0028;
                         const newZoom = Math.min(
                             8,
                             Math.max(0.4, zoom * (1 + delta)),
@@ -4788,6 +5332,30 @@
                 buildSitemap();
                 sitemap.classList.add("open");
                 sitemapBackdrop.classList.add("open");
+            };
+            document.getElementById("clearCanvasBtn").onclick = async () => {
+                const ok = await showConfirm({
+                    title: "Clear this canvas?",
+                    bodyHtml:
+                        "This removes <strong>everything</strong> on the current canvas — screens, text, images, links, pins, frames and drawings — including screens nested inside them. You can Undo afterwards.",
+                    confirmLabel: "Clear canvas",
+                });
+                if (!ok) return;
+                pushUndo();
+                const cv = getCanvas(path);
+                cv.nodes = [];
+                cv.assets = (cv.assets || []).slice(0, 0);
+                cv.pins.length = 0;
+                cv.drawings.length = 0;
+                cv.frames = (cv.frames || []).slice(0, 0);
+                cv.children = {};
+                multiSelected.clear();
+                selectedEl = null;
+                selectedData = null;
+                selectedDrawing = null;
+                selectedDrawingCv = null;
+                if (!pathValid(path)) path = ["root"];
+                render();
             };
             document.getElementById("closeMap").onclick = () => {
                 sitemap.classList.remove("open");
