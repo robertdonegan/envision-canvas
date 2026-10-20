@@ -2739,7 +2739,6 @@
                 <button role="menuitem" data-action="export-json"><span class="mi-ico" data-mi="download"></span>Export as JSON</button>
                 <button role="menuitem" data-action="import"><span class="mi-ico" data-mi="upload"></span>Import JSON…</button>
                 <div class="mm-sep"></div>
-                <button role="menuitem" data-action="new"><span class="mi-ico" data-mi="add"></span>New canvas</button>
                 <button role="menuitem" data-action="share"><span class="mi-ico" data-mi="link"></span>Copy canvas link</button>
             </div>
             <input type="file" id="importFile" accept=".json,application/json" hidden />
@@ -7016,9 +7015,6 @@
                         break;
                     case "import":
                         document.getElementById("importFile").click();
-                        break;
-                    case "new":
-                        newCanvas();
                         break;
                     case "share":
                         copyCanvasLink();
