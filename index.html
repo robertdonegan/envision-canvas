@@ -6,36 +6,54 @@
             name="viewport"
             content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
         />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
         <title>Envision — Nested Canvas Prototype</title>
         <style>
             :root {
-                --bg: #fafaf7;
-                --bg-canvas: #f1efe8;
-                --dot: #e2dfd3;
+                /* Jacobs brand foundations: neutrals, blue-800 primary, IBM Plex Sans */
+                --bg: #ffffff;
+                --bg-canvas: #f3f3f3;
+                --dot: #cfcfcf;
+                --legend-w-base: 232px;
+                --legend-w: var(--legend-w-base);
+                --map-w: 0px;
                 --surface: #ffffff;
-                --border: #e4e1d7;
-                --border-strong: #d2cec0;
-                --ink: #1b1a17;
-                --ink-dim: #6e6b61;
-                --ink-faint: #a6a296;
-                --terminal: #181712;
-                --green: #2f6d4f;
-                --green-soft: #e7f0ea;
-                --red: #b5483a;
-                --red-soft: #f6e7e3;
-                --amber: #b5822e;
-                --amber-soft: #f4ecdc;
-                --blue: #3d6fa8;
-                --blue-soft: #e3ebf3;
-                --purple: #7a4fa0;
-                --purple-soft: #efe6f3;
-                --teal: #2e7d8c;
-                --teal-soft: #e2eef0;
-                --risk: #c2622e;
-                --risk-soft: #f5e4d9;
-                --mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-                --sans: "Inter", -apple-system, "Segoe UI", sans-serif;
-                --radius: 12px;
+                --border: #e6e6e6;
+                --border-strong: #c8c8c8;
+                --ink: #333333;
+                --ink-dim: #666666;
+                --ink-faint: #999999;
+                --terminal: #3b6de6;
+                --green: #0a9f5c;
+                --green-soft: #e4f6ec;
+                --red: #cc334f;
+                --red-soft: #fde9ec;
+                --amber: #c98400;
+                --amber-soft: #fff3d6;
+                --blue: #3b6de6;
+                --blue-soft: #eef4fe;
+                --purple: #7a35e0;
+                --purple-soft: #f1e8fd;
+                --teal: #0a8a9c;
+                --teal-soft: #e0f3f6;
+                --risk: #ff6100;
+                --risk-soft: #ffecd8;
+                /* Brand bright colours for pins */
+                --pin-bug: #ff465f;
+                --pin-feature: #0a7dff;
+                --pin-question: #d97500;
+                --pin-observation: #231edc;
+                --pin-idea: #8a3ffc;
+                --pin-risk: #ff6100;
+                --pin-done: #12b76a;
+                --mono: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+                --sans: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+                --radius: 3px;
             }
             * {
                 box-sizing: border-box;
@@ -84,16 +102,15 @@
             #logoSlot {
                 width: 30px;
                 height: 30px;
-                border-radius: 7px;
-                border: 1.5px dashed var(--border-strong);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-family: var(--mono);
-                font-size: 7px;
-                letter-spacing: 0.04em;
-                color: var(--ink-faint);
+                color: var(--ink);
                 flex-shrink: 0;
+            }
+            #logoSlot svg {
+                width: 22px;
+                height: 22px;
             }
             #breadcrumb .crumb {
                 cursor: pointer;
@@ -125,6 +142,66 @@
             #breadcrumb .sep {
                 color: var(--ink-faint);
                 font-size: 11px;
+            }
+
+
+            #zoomctl button svg,
+            .seg button svg,
+            #presentBar button svg,
+            .pc-btn svg,
+            .ado-link-btn svg {
+                width: 14px;
+                height: 14px;
+                display: block;
+                flex-shrink: 0;
+            }
+            .seg button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            #presentBar button,
+            .pc-btn[data-ui-icon],
+            .ado-link-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 5px;
+            }
+            .ado-link-btn {
+                display: flex;
+            }
+            .ado-mini-btn svg {
+                width: 12px;
+                height: 12px;
+            }
+            .node-diff svg {
+                width: calc(12px * var(--ts, 1));
+                height: calc(12px * var(--ts, 1));
+            }
+            .frame-label .fc svg {
+                width: 14px;
+                height: 14px;
+            }
+            .frame-collapsed-card .fc {
+                display: inline-flex;
+            }
+            .frame-collapsed-card .fc svg {
+                width: calc(14px * var(--ts, 1));
+                height: calc(14px * var(--ts, 1));
+            }
+            .link-card .lk-row svg {
+                width: 12px;
+                height: 12px;
+                margin-right: -2px;
+            }
+            #breadcrumb .sep {
+                display: inline-flex;
+                align-items: center;
+            }
+            #breadcrumb .sep svg {
+                width: 12px;
+                height: 12px;
             }
 
             .topbtn {
@@ -268,36 +345,122 @@
                 text-align: center;
             }
 
-            #overlayLegend {
+            #overlayPanel {
                 position: absolute;
-                top: 64px;
-                right: 18px;
+                top: 56px;
+                bottom: 0;
+                right: var(--map-w);
+                width: var(--legend-w);
                 z-index: 55;
-                background: var(--surface);
-                border: 1px solid var(--border-strong);
-                border-radius: 10px;
-                padding: 10px 12px;
-                box-shadow: 0 10px 24px -10px rgba(20, 18, 12, 0.18);
-                display: none;
+                background: var(--bg);
+                border-left: 1px solid var(--border-strong);
+                padding: 16px 14px;
+                overflow-y: auto;
                 font-family: var(--mono);
                 font-size: 10.5px;
             }
-            #overlayLegend.open {
-                display: block;
+            body.legend-hidden {
+                --legend-w: 0px;
+            }
+            body.map-open {
+                --map-w: var(--legend-w-base);
+            }
+            body.legend-hidden #overlayPanel {
+                display: none;
+            }
+            #overlayPanel h2 {
+                font-family: var(--mono);
+                font-size: 12px;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                color: var(--ink-faint);
+                font-weight: 500;
+                margin: 0 0 14px;
+            }
+            .legend-section + .legend-section {
+                margin-top: 16px;
+                padding-top: 14px;
+                border-top: 1px solid var(--border);
+            }
+            .legend-title {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-bottom: 8px;
+                color: var(--ink-faint);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                cursor: pointer;
+                user-select: none;
+            }
+            .legend-title::before {
+                content: "";
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                border: 1.5px solid var(--ink-faint);
+                box-sizing: border-box;
+            }
+            .legend-section.active .legend-title {
+                color: var(--ink);
+            }
+            .legend-section.active .legend-title::before {
+                background: var(--ink);
+                border-color: var(--ink);
+            }
+            .pin.legend-pin {
+                border: none;
+                width: 16px;
+                height: 16px;
+                font-size: 9px;
+                box-shadow: none;
+                cursor: default;
+                flex-shrink: 0;
+            }
+            .pin.legend-pin svg {
+                width: 12px;
+                height: 12px;
+            }
+            .pin.legend-pin:hover {
+                transform: none;
             }
             .legend-row {
                 display: flex;
                 align-items: center;
                 gap: 7px;
-                margin-top: 5px;
+                padding: 3px 6px;
+                margin: 0 -6px;
+                border-radius: 5px;
+                cursor: pointer;
+                user-select: none;
             }
-            .legend-row:first-child {
-                margin-top: 0;
+            .legend-count {
+                margin-left: auto;
+                color: var(--ink-faint);
+                font-variant-numeric: tabular-nums;
+            }
+            .legend-row:hover {
+                background: var(--bg-canvas);
+            }
+            .legend-row.focused {
+                background: var(--bg-canvas);
+                color: var(--ink);
+                font-weight: 600;
+            }
+            .legend-section.has-focus .legend-row:not(.focused) {
+                opacity: 0.45;
+            }
+            .pin-group {
+                transition: opacity 0.15s;
+            }
+            .pin-group.pin-dim {
+                opacity: 0.18;
             }
             .legend-swatch {
                 width: 10px;
                 height: 10px;
                 border-radius: 50%;
+                margin: 0 3px;
                 flex-shrink: 0;
             }
 
@@ -306,6 +469,7 @@
                 position: absolute;
                 inset: 0;
                 top: 56px;
+                right: calc(var(--legend-w) + var(--map-w));
                 background: var(--bg-canvas);
                 overflow: hidden;
                 touch-action: none;
@@ -322,11 +486,16 @@
                 position: absolute;
                 inset: 0;
                 background-image: radial-gradient(
-                    var(--dot) 1.4px,
-                    transparent 1.4px
+                    var(--dot) var(--dot-r, 1.4px),
+                    transparent var(--dot-r, 1.4px)
                 );
                 background-size: 26px 26px;
                 pointer-events: none;
+            }
+            #dotgrid.zoom-anim {
+                transition:
+                    background-size 0.45s cubic-bezier(0.65, 0, 0.35, 1),
+                    background-position 0.45s cubic-bezier(0.65, 0, 0.35, 1);
             }
             #canvasLayer {
                 position: absolute;
@@ -346,7 +515,7 @@
                 z-index: 60;
                 background: var(--surface);
                 border: 1px solid var(--border-strong);
-                border-radius: 14px;
+                border-radius: 6px;
                 padding: 6px;
                 display: flex;
                 flex-direction: column;
@@ -408,7 +577,7 @@
             .tool {
                 width: 42px;
                 height: 40px;
-                border-radius: 9px;
+                border-radius: 4px;
                 border: none;
                 background: transparent;
                 color: var(--ink-dim);
@@ -423,14 +592,9 @@
                 position: relative;
             }
             .tool svg {
-                width: 24px;
-                height: 24px;
+                width: 16px;
+                height: 16px;
                 display: block;
-            }
-            .tool[data-tool="text"] {
-                font-family: var(--mono);
-                font-weight: 700;
-                font-size: 18px;
             }
             .tool .kbd {
                 position: absolute;
@@ -499,6 +663,16 @@
                 width: 46px;
                 text-align: center;
             }
+            #zoomctl button svg {
+                width: 16px;
+                height: 16px;
+                display: block;
+            }
+            #zoomctl button.active,
+            #zoomctl button.active:hover {
+                background: var(--terminal);
+                color: #fff;
+            }
             #zoomReset {
                 font-family: var(--mono);
                 font-size: 10px;
@@ -539,7 +713,7 @@
                 align-items: center;
                 justify-content: space-between;
                 padding: 0 8px;
-                background: #fbfaf7;
+                background: #f7f7f7;
                 border-bottom: 1px solid var(--border);
             }
             .badge-live {
@@ -587,7 +761,7 @@
                 position: relative;
                 width: 100%;
                 height: calc(100% - 48px);
-                background: #fcfcfa;
+                background: #ffffff;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -631,10 +805,17 @@
                 color: var(--ink);
             }
             .dive-hint {
+                display: inline-flex;
+                align-items: center;
+                gap: calc(3px * var(--ts, 1));
                 opacity: 0;
                 transition: opacity 0.15s;
                 color: var(--green);
                 font-size: calc(9.5px * var(--ts, 1));
+            }
+            .dive-hint svg {
+                width: calc(12px * var(--ts, 1));
+                height: calc(12px * var(--ts, 1));
             }
             .node:hover .dive-hint {
                 opacity: 1;
@@ -653,6 +834,28 @@
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
+            }
+            .node-upload,
+            .node-delete,
+            .node-diff,
+            .image-card .img-upload,
+            .ado-mini-btn {
+                padding: 0;
+            }
+            .node-upload svg,
+            .node-delete svg,
+            .node-diff svg,
+            .image-card .img-upload svg,
+            .ado-mini-btn svg,
+            .asset-delete svg,
+            .frame-label .fc svg,
+            .frame-collapsed-card .fc svg {
+                flex: none;
+            }
+            .node-upload svg,
+            .node-delete svg {
+                width: calc(14px * var(--ts, 1));
+                height: calc(14px * var(--ts, 1));
             }
             .node-upload:hover {
                 background: var(--terminal);
@@ -722,7 +925,7 @@
                 position: relative;
                 width: 100%;
                 aspect-ratio: 16/10;
-                background: #fcfcfa;
+                background: #ffffff;
                 border: 1px solid var(--border);
                 border-radius: 10px;
                 overflow: hidden;
@@ -807,12 +1010,12 @@
                 position: absolute;
                 inset: 8px;
                 border-radius: 4px;
-                background: #fcfcfa;
+                background: #ffffff;
                 border: 1px solid var(--border);
             }
             .thumb-bar {
                 height: 9px;
-                background: #edeae0;
+                background: #ececec;
                 border-radius: 2px;
                 margin: 7px 7px 0;
             }
@@ -822,13 +1025,13 @@
                 margin: 6px 7px 0;
             }
             .thumb-block {
-                background: #f1eee4;
+                background: #f3f3f3;
                 border-radius: 2px;
                 flex: 1;
             }
             .thumb-block.accent {
                 background: var(--green-soft);
-                border: 1px solid #bbd8c9;
+                border: 1px solid #b5e3cb;
             }
 
             /* generic asset card (image / link / text) */
@@ -861,20 +1064,16 @@
                 font-size: 10px;
                 background: repeating-linear-gradient(
                     45deg,
-                    #f7f5ef 0 8px,
-                    #fcfcfa 8px 16px
+                    #f3f3f3 0 8px,
+                    #ffffff 8px 16px
                 );
                 overflow: hidden;
             }
             .image-card .img-body img {
-                max-width: 88%;
-                max-height: 88%;
-                width: auto;
-                height: auto;
-                object-fit: contain;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
                 display: block;
-                border-radius: 4px;
-                box-shadow: 0 2px 10px -4px rgba(20, 18, 12, 0.3);
             }
             .image-card .img-foot {
                 height: 20px;
@@ -943,6 +1142,10 @@
                 flex-shrink: 0;
                 margin-left: calc(5px * var(--ts, 1));
             }
+            .image-card .img-upload svg {
+                width: calc(12px * var(--ts, 1));
+                height: calc(12px * var(--ts, 1));
+            }
             .image-card .img-upload:hover {
                 background: var(--terminal);
                 color: #fff;
@@ -996,11 +1199,9 @@
                 box-shadow: 0 2px 6px rgba(20, 18, 12, 0.25);
                 z-index: 5;
             }
-            .asset-delete::before {
-                content: "×";
-                font-size: 12px;
-                line-height: 1;
-                font-family: var(--mono);
+            .asset-delete svg {
+                width: 14px;
+                height: 14px;
             }
             .text-card:hover .asset-delete,
             .text-card.selected .asset-delete {
@@ -1033,7 +1234,8 @@
                 font-weight: 700;
                 color: #fff;
                 cursor: pointer;
-                box-shadow: 0 2px 6px rgba(20, 18, 12, 0.3);
+                border: 2px solid #fff;
+                box-shadow: 0 1px 2px #0000001a, 0 2px 4px #0000001a;
                 transform: scale(1);
                 transition: transform 0.12s;
                 touch-action: none;
@@ -1042,26 +1244,31 @@
             .pin:hover {
                 transform: scale(1.25);
             }
+            .pin svg {
+                width: 16px;
+                height: 16px;
+                pointer-events: none;
+            }
             .pin.bug {
-                background: var(--red);
+                background: var(--pin-bug);
             }
             .pin.feature {
-                background: var(--amber);
+                background: var(--pin-feature);
             }
             .pin.observation {
-                background: var(--blue);
+                background: var(--pin-observation);
             }
             .pin.idea {
-                background: var(--purple);
+                background: var(--pin-idea);
             }
             .pin.question {
-                background: var(--teal);
+                background: var(--pin-question);
             }
             .pin.risk {
-                background: var(--risk);
+                background: var(--pin-risk);
             }
             .pin.done {
-                background: var(--green);
+                background: var(--pin-done);
             }
 
             .sticky {
@@ -1238,7 +1445,7 @@
             .chip-ado-link {
                 color: var(--green);
                 text-decoration: underline;
-                text-decoration-color: #bbd8c9;
+                text-decoration-color: #b5e3cb;
                 cursor: pointer;
             }
             .chip-ado-link:hover {
@@ -1261,11 +1468,11 @@
             }
             svg.drawlayer path.hl-stroke {
                 fill: none;
-                stroke: #fce181;
+                stroke: #ffb41e;
                 stroke-width: 14;
                 stroke-linecap: round;
                 stroke-linejoin: round;
-                opacity: 0.55;
+                opacity: 0.3;
                 mix-blend-mode: multiply;
             }
             svg.drawlayer line.arrow-line {
@@ -1334,77 +1541,65 @@
             }
 
             /* ---------- SITEMAP ---------- */
-            #sitemapBackdrop {
-                position: fixed;
-                inset: 0;
-                z-index: 149;
-                background: transparent;
-                display: none;
-            }
-            #sitemapBackdrop.open {
-                display: block;
-            }
             #sitemap {
-                position: fixed;
-                top: 0;
+                position: absolute;
+                top: 56px;
                 right: 0;
-                height: 100vh;
-                width: 340px;
-                max-width: 90vw;
+                bottom: 0;
+                width: var(--map-w);
                 background: var(--bg);
                 border-left: 1px solid var(--border-strong);
-                box-shadow: -16px 0 32px -12px rgba(20, 18, 12, 0.25);
-                z-index: 150;
-                transform: translateX(100%);
-                transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-                display: flex;
-                flex-direction: column;
-                padding: 20px 16px;
+                z-index: 55;
+                padding: 16px 14px;
                 overflow-y: auto;
+                display: none;
             }
-            #sitemap.open {
-                transform: translateX(0);
+            body.map-open #sitemap {
+                display: block;
             }
-            #sitemapHeader {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 14px;
-                flex-shrink: 0;
-            }
-            #sitemapHeader h2 {
+            #sitemap h2 {
                 font-family: var(--mono);
                 font-size: 12px;
                 letter-spacing: 0.1em;
                 text-transform: uppercase;
                 color: var(--ink-faint);
                 font-weight: 500;
-                margin: 0;
+                margin: 0 0 14px;
             }
-            #closeMap {
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
-                border: 1px solid var(--border-strong);
-                background: var(--surface);
-                color: var(--ink-dim);
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 13px;
-                flex-shrink: 0;
+            .smap-item {
+                position: relative;
             }
-            #closeMap:hover {
-                background: var(--terminal);
-                color: #fff;
-                border-color: var(--terminal);
+            .smap-children {
+                margin-left: 15px;
+                padding-left: 12px;
+            }
+            .smap-children > .smap-item::before {
+                content: "";
+                position: absolute;
+                left: -12px;
+                top: 0;
+                bottom: 0;
+                border-left: 1px solid var(--border-strong);
+            }
+            .smap-children > .smap-item:last-child::before {
+                bottom: auto;
+                height: 17px;
+            }
+            .smap-children > .smap-item::after {
+                content: "";
+                position: absolute;
+                left: -12px;
+                top: 17px;
+                width: 10px;
+                border-top: 1px solid var(--border-strong);
             }
             .smap-node {
                 display: flex;
                 align-items: center;
                 gap: 10px;
-                padding: 9px 12px;
+                height: 34px;
+                box-sizing: border-box;
+                padding: 0 12px;
                 border-radius: 8px;
                 cursor: pointer;
                 font-family: var(--mono);
@@ -1422,7 +1617,7 @@
             .smap-node.active {
                 color: var(--ink);
                 background: var(--green-soft);
-                border-color: #bbd8c9;
+                border-color: #b5e3cb;
             }
             .smap-node .smap-dot {
                 width: 7px;
@@ -1434,8 +1629,16 @@
             .smap-node.active .smap-dot {
                 background: var(--green);
             }
+            .smap-title {
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
             .smap-meta {
                 margin-left: auto;
+                flex-shrink: 0;
+                white-space: nowrap;
                 color: var(--ink-faint);
                 font-size: 10px;
             }
@@ -1451,9 +1654,32 @@
                 padding: 14px;
                 box-shadow: 0 20px 40px -10px rgba(20, 18, 12, 0.3);
                 display: none;
+                max-height: calc(100vh - 16px);
+                overflow-y: auto;
             }
             #pinCard.open {
                 display: block;
+            }
+            #pinCard .pc-drag {
+                margin: -14px -14px 10px;
+                height: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: grab;
+                touch-action: none;
+                user-select: none;
+                border-bottom: 1px solid var(--border);
+            }
+            #pinCard .pc-drag::before {
+                content: "";
+                width: 28px;
+                height: 4px;
+                border-radius: 2px;
+                background: var(--border-strong);
+            }
+            #pinCard.dragging .pc-drag {
+                cursor: grabbing;
             }
             #pinCard .pc-row {
                 display: flex;
@@ -1464,17 +1690,48 @@
             #pinCard input,
             #pinCard textarea {
                 width: 100%;
-                background: #fcfcfa;
+                background: #ffffff;
                 border: 1px solid var(--border-strong);
                 color: var(--ink);
                 font-family: var(--sans);
                 font-size: 12px;
-                padding: 6px 7px;
-                border-radius: 6px;
+                line-height: 16px;
+                padding: 7px 10px;
+                border-radius: 4px;
                 resize: none;
+                outline: none;
+                transition:
+                    border-color 0.12s,
+                    box-shadow 0.12s;
+            }
+            #pinCard select,
+            #pinCard input {
+                height: 32px;
+            }
+            #pinCard select {
+                appearance: none;
+                -webkit-appearance: none;
+                padding-right: 30px;
+                cursor: pointer;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M10.9696 6.9696C11.2625 6.67675 11.7372 6.67683 12.0302 6.9696C12.323 7.2625 12.323 7.73726 12.0302 8.03015L8.53015 11.5302L8.47351 11.5819C8.17893 11.8222 7.7442 11.8047 7.4696 11.5302L3.9696 8.03015L3.91785 7.97351C3.67765 7.67893 3.69504 7.24417 3.9696 6.9696C4.24417 6.69504 4.67893 6.67765 4.97351 6.91785L5.03015 6.9696L7.99988 9.93933L10.9696 6.9696Z' fill='%23666'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 8px center;
+                background-size: 16px 16px;
+            }
+            #pinCard select:hover,
+            #pinCard input:hover,
+            #pinCard textarea:hover {
+                border-color: var(--ink-faint);
+            }
+            #pinCard select:focus,
+            #pinCard input:focus,
+            #pinCard textarea:focus {
+                border-color: var(--terminal);
+                box-shadow: 0 0 0 3px rgba(59, 109, 230, 0.15);
             }
             #pinCard textarea {
-                height: 50px;
+                height: 64px;
+                margin-bottom: 8px;
             }
             #pinCard label {
                 font-family: var(--mono);
@@ -1495,10 +1752,10 @@
                 font-family: var(--mono);
                 font-size: 10.5px;
                 padding: 7px 11px;
-                border-radius: 7px;
+                border-radius: 4px;
                 cursor: pointer;
                 border: 1px solid var(--border-strong);
-                background: #fcfcfa;
+                background: #ffffff;
                 color: var(--ink-dim);
             }
             .pc-btn.primary {
@@ -1519,11 +1776,89 @@
             }
             .pc-comment {
                 padding: 7px 9px;
-                background: #fbfaf7;
+                background: #f7f7f7;
                 border: 1px solid var(--border);
                 border-radius: 7px;
                 margin-bottom: 6px;
                 font-size: 12px;
+            }
+            .pc-comment {
+                position: relative;
+            }
+            .pc-comment .pcc-actions {
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                display: flex;
+                gap: 2px;
+                opacity: 0;
+                transition: opacity 0.12s;
+            }
+            .pc-comment:hover .pcc-actions,
+            .pc-comment:focus-within .pcc-actions {
+                opacity: 1;
+            }
+            .pcc-actions button {
+                width: 20px;
+                height: 20px;
+                padding: 0;
+                border: none;
+                border-radius: 4px;
+                background: transparent;
+                color: var(--ink-faint);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .pcc-actions button svg {
+                width: 13px;
+                height: 13px;
+            }
+            .pcc-actions button:hover {
+                background: var(--bg-canvas);
+                color: var(--ink);
+            }
+            .pcc-actions button.pcc-del:hover {
+                background: var(--red);
+                color: #fff;
+            }
+            .pc-comment .pcc-text {
+                white-space: pre-wrap;
+                padding-right: 36px;
+            }
+            .pc-comment textarea.pcc-edit {
+                width: 100%;
+                min-height: 52px;
+                resize: vertical;
+                font: inherit;
+                padding: 6px 8px;
+                border: 1px solid var(--terminal);
+                border-radius: 4px;
+                outline: none;
+                background: #fff;
+                color: var(--ink);
+            }
+            .pcc-edit-row {
+                display: flex;
+                justify-content: flex-end;
+                gap: 6px;
+                margin-top: 6px;
+            }
+            .pcc-edit-row button {
+                font: inherit;
+                font-size: 11px;
+                padding: 3px 10px;
+                border-radius: 4px;
+                border: 1px solid var(--border-strong);
+                background: #fff;
+                color: var(--ink-dim);
+                cursor: pointer;
+            }
+            .pcc-edit-row button.pcc-save {
+                background: var(--terminal);
+                border-color: var(--terminal);
+                color: #fff;
             }
             .pc-comment .pcc-meta {
                 font-family: var(--mono);
@@ -1537,7 +1872,7 @@
                 padding: 9px 10px;
                 border: 1px solid var(--border);
                 border-radius: 8px;
-                background: #fbfaf7;
+                background: #f7f7f7;
             }
             .ado-row {
                 display: flex;
@@ -1631,7 +1966,7 @@
             }
             #badgeCard input {
                 width: 100%;
-                background: #fcfcfa;
+                background: #ffffff;
                 border: 1px solid var(--border-strong);
                 color: var(--ink);
                 font-family: var(--sans);
@@ -1648,7 +1983,7 @@
             .seg button {
                 flex: 1;
                 border: none;
-                background: #fcfcfa;
+                background: #ffffff;
                 color: var(--ink-dim);
                 font-family: var(--mono);
                 font-size: 10.5px;
@@ -1698,7 +2033,9 @@
     <body>
         <div id="app">
             <div id="topbar">
-                <div id="logoSlot" title="Product logo placeholder">LOGO</div>
+                <div id="logoSlot" title="Envision">
+                    <svg viewBox="-0.1 -0.1 16.2 16.2" fill="currentColor" aria-hidden="true"><path d="M8.85754 14.1396C9.14881 13.8453 9.62361 13.8426 9.91809 14.1338C10.2122 14.4249 10.2147 14.8989 9.92395 15.1934C9.4064 15.7167 8.75433 16.0829 8.00012 16.083C7.24582 16.083 6.59389 15.7168 6.07629 15.1934C5.78529 14.8989 5.78782 14.425 6.08215 14.1338C6.37657 13.8427 6.85143 13.8445 7.1427 14.1387C7.47143 14.4711 7.76186 14.5829 8.00012 14.583C8.23831 14.5829 8.52896 14.4719 8.85754 14.1396ZM7.27454 4.2627C7.43424 3.88069 7.87389 3.6999 8.25598 3.85938C8.87748 4.11902 9.50934 4.4307 10.1368 4.79297C11.9614 5.84636 13.4511 7.15394 14.3741 8.44531C15.2539 9.67614 15.7923 11.1627 15.0948 12.3711C14.7013 13.0527 14.0199 13.4385 13.2706 13.6162C12.524 13.7932 11.6478 13.7826 10.7277 13.6299C10.3194 13.5619 10.0429 13.176 10.1105 12.7676C10.1783 12.359 10.5652 12.0826 10.9738 12.1504C11.7694 12.2824 12.4326 12.273 12.9249 12.1562C13.414 12.0402 13.672 11.8365 13.796 11.6221C14.0188 11.2363 13.9699 10.4583 13.1544 9.31738C12.3822 8.23699 11.0696 7.06434 9.38684 6.09277C8.81351 5.76176 8.2392 5.47768 7.67786 5.24316C7.29593 5.08344 7.11512 4.64474 7.27454 4.2627ZM1.85559 7.63379C2.11858 7.31395 2.59131 7.26746 2.91125 7.53027C3.23073 7.79324 3.27726 8.2661 3.01477 8.58594C2.50257 9.20896 2.17844 9.78774 2.03333 10.2725C1.88914 10.7544 1.93683 11.0802 2.06067 11.2949C2.2836 11.6806 2.98176 12.0263 4.37708 11.8906C5.69864 11.762 7.37041 11.2125 9.05286 10.2412C9.62604 9.91028 10.159 9.55432 10.6427 9.18555C10.9721 8.93439 11.4433 8.99777 11.6945 9.32715C11.9453 9.65651 11.8811 10.1269 11.5519 10.3779C11.0163 10.7863 10.4303 11.1778 9.80286 11.54C7.97857 12.5932 6.10229 13.23 4.52258 13.3838C3.01676 13.5303 1.45964 13.2532 0.761841 12.0449C0.368401 11.3633 0.375116 10.5805 0.595825 9.84277C0.815814 9.10754 1.26319 8.35438 1.85559 7.63379ZM8.00012 -0.0839844C8.78693 -0.0839037 9.46091 0.314267 9.98938 0.874023C10.516 1.43207 10.9457 2.19616 11.2736 3.06934C11.419 3.4571 11.2219 3.8896 10.8341 4.03516C10.4465 4.18029 10.0148 3.9842 9.86926 3.59668C9.58585 2.84178 9.24669 2.27228 8.89954 1.9043C8.55421 1.53839 8.24802 1.41613 8.00012 1.41602C7.55465 1.4161 6.90652 1.84868 6.32629 3.125C5.77682 4.33395 5.41617 6.05702 5.41614 8C5.41615 8.66186 5.45871 9.30104 5.53625 9.9043C5.58894 10.315 5.2976 10.6913 4.88684 10.7441C4.47642 10.7964 4.10085 10.5061 4.04797 10.0957C3.9621 9.42765 3.91614 8.72455 3.91614 8C3.91616 5.89322 4.30228 3.94899 4.95911 2.50391C5.58521 1.12648 6.6047 -0.0839665 8.00012 -0.0839844ZM8.00696 7.25C8.42091 7.25025 8.7559 7.58601 8.75598 8C8.7559 8.41415 8.42015 8.75 8.00598 8.75H8.00012C7.58608 8.74997 7.25036 8.41399 7.25012 8C7.25036 7.58625 7.58544 7.25041 7.99915 7.25H8.00696ZM2.82727 3.06641C3.22778 2.96177 3.63736 3.20205 3.74231 3.60254C3.84703 4.003 3.60751 4.41248 3.20715 4.51758C2.75501 4.63606 2.51288 4.83182 2.39368 5.03809C2.27466 5.24437 2.22643 5.55138 2.34973 6.00195C2.45909 6.40115 2.22427 6.81402 1.82532 6.92383C1.42593 7.03324 1.01203 6.79872 0.902466 6.39941C0.707983 5.68943 0.717679 4.94136 1.09485 4.28809C1.47204 3.63489 2.1152 3.25295 2.82727 3.06641ZM12.1144 3.27637C12.2193 2.87567 12.6297 2.63526 13.0304 2.74023C13.7424 2.92682 14.3857 3.30871 14.7628 3.96191C15.1398 4.61511 15.1487 5.36339 14.9542 6.07324C14.8446 6.47228 14.4316 6.70685 14.0323 6.59766C13.6332 6.48809 13.3987 6.07603 13.5079 5.67676C13.6314 5.22604 13.5829 4.9183 13.464 4.71191C13.3449 4.50561 13.1026 4.30995 12.6505 4.19141C12.25 4.08649 12.0098 3.67686 12.1144 3.27637Z"/></svg>
+                </div>
                 <div id="breadcrumb"></div>
                 <div
                     id="presence"
@@ -1716,14 +2053,8 @@
                 <div id="topright">
                     <div
                         class="topbtn icon-only"
-                        id="overlayBtn"
-                        title="Overlay: Off"
-                    >
-                        ◐
-                    </div>
-                    <div
-                        class="topbtn icon-only"
                         id="presentBtn"
+                        style="display: none"
                         title="Present"
                     >
                         ▶
@@ -1734,6 +2065,7 @@
                     <div
                         class="topbtn icon-only"
                         id="newBoardBtn"
+                        style="display: none"
                         title="New board"
                     >
                         <svg
@@ -1753,26 +2085,13 @@
                         </svg>
                     </div>
                     <div
-                        class="topbtn icon-only"
-                        id="clearCanvasBtn"
-                        title="Clear this canvas"
+                        class="topbtn icon-only active"
+                        id="legendBtn"
+                        title="Hide pin legend"
                     >
-                        <svg
-                            viewBox="0 0 24 24"
-                            width="16"
-                            height="16"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.7"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        >
-                            <path d="M4 7h16" />
-                            <path d="M9 7V4h6v3" />
-                            <path d="M6 7l1 13h10l1-13" />
-                        </svg>
+                        ▥
                     </div>
-                    <div class="topbtn icon-only" id="mapBtn" title="Sitemap">
+                    <div class="topbtn icon-only" id="mapBtn" title="Show sitemap">
                         ⊞
                     </div>
                 </div>
@@ -1950,23 +2269,6 @@
                     <span class="kbd">0</span>
                 </button>
                 <div class="tool-divider"></div>
-                <button class="tool" id="snapToggle" title="Snap to grid">
-                    <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.6"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <rect x="3" y="3" width="18" height="18" rx="1.5" />
-                        <path d="M3 9h18" />
-                        <path d="M3 15h18" />
-                        <path d="M9 3v18" />
-                        <path d="M15 3v18" />
-                    </svg>
-                </button>
-                <div class="tool-divider"></div>
                 <button class="tool" id="undoBtn" title="Undo (⌘Z)">
                     <svg
                         viewBox="0 0 24 24"
@@ -1995,40 +2297,43 @@
                 </button>
             </div>
 
-            <div id="overlayLegend"></div>
+            <aside id="overlayPanel">
+                <h2>Pin legend</h2>
+                <div id="overlayLegend"></div>
+            </aside>
 
             <div id="toolOptions">
                 <div id="optPen" class="opt-panel flush">
                     <div class="swatches" id="penSwatches">
                         <button
                             class="swatch active"
-                            data-c="#1B1A17"
-                            style="background: #1b1a17"
+                            data-c="#333333"
+                            style="background: #333333"
                             title="Ink"
                         ></button>
                         <button
                             class="swatch"
-                            data-c="#B5483A"
-                            style="background: #b5483a"
+                            data-c="#FF465F"
+                            style="background: #FF465F"
                             title="Red"
                         ></button>
                         <button
                             class="swatch"
-                            data-c="#3D6FA8"
-                            style="background: #3d6fa8"
+                            data-c="#0A7DFF"
+                            style="background: #0A7DFF"
                             title="Blue"
                         ></button>
                         <button
                             class="swatch"
-                            data-c="#2F6D4F"
-                            style="background: #2f6d4f"
-                            title="Green"
+                            data-c="#231EDC"
+                            style="background: #231EDC"
+                            title="Indigo"
                         ></button>
                         <button
                             class="swatch"
-                            data-c="#6E6B61"
-                            style="background: #6e6b61"
-                            title="Grey"
+                            data-c="#12B76A"
+                            style="background: #12B76A"
+                            title="Green"
                         ></button>
                     </div>
                 </div>
@@ -2036,44 +2341,42 @@
                     <div class="swatches" id="hlSwatches">
                         <button
                             class="swatch active"
-                            data-c="#FCE181"
-                            style="background: #fce181"
+                            data-c="#FFB41E"
+                            style="background: #FFB41E"
                             title="Yellow"
                         ></button>
                         <button
                             class="swatch"
-                            data-c="#B7E4C7"
-                            style="background: #b7e4c7"
-                            title="Green"
+                            data-c="#FF6100"
+                            style="background: #FF6100"
+                            title="Orange"
                         ></button>
                         <button
                             class="swatch"
-                            data-c="#F6B8CE"
-                            style="background: #f6b8ce"
-                            title="Pink"
+                            data-c="#FF465F"
+                            style="background: #FF465F"
+                            title="Red"
                         ></button>
                         <button
                             class="swatch"
-                            data-c="#BBD8F0"
-                            style="background: #bbd8f0"
+                            data-c="#0A7DFF"
+                            style="background: #0A7DFF"
                             title="Blue"
                         ></button>
                         <button
                             class="swatch"
-                            data-c="#F3C98A"
-                            style="background: #f3c98a"
-                            title="Orange"
+                            data-c="#12B76A"
+                            style="background: #12B76A"
+                            title="Green"
                         ></button>
                     </div>
                 </div>
                 <div id="optArrow" class="opt-panel">
                     <label>Arrowhead</label>
                     <div class="seg" id="ahSeg">
-                        <button data-v="end" class="active" title="Single head">
-                            →
-                        </button>
-                        <button data-v="both" title="Both ends">↔</button>
-                        <button data-v="none" title="No head">—</button>
+                        <button data-v="end" class="active" title="Single head" data-ui-icon="right-arrow"></button>
+                        <button data-v="both" title="Both ends" data-ui-icon="both"></button>
+                        <button data-v="none" title="No head" data-ui-icon="none"></button>
                     </div>
                     <label>Stroke</label>
                     <div class="seg" id="adSeg">
@@ -2084,30 +2387,27 @@
             </div>
 
             <div id="zoomctl">
-                <button id="zoomOut">−</button>
+                <button id="zoomOut" data-ui-icon="minus" title="Zoom out"></button>
                 <span id="zoomlabel">100%</span>
-                <button id="zoomIn">+</button>
+                <button id="zoomIn" data-ui-icon="add" title="Zoom in"></button>
                 <span id="zoomReset">Reset</span>
+                <button id="snapToggle" title="Snap to grid"></button>
             </div>
 
             <div id="hintToastWrap">
                 <span id="hintToast"
                     >Double-click/tap a screen to <b>dive in</b> ·
-                    Double-click/tap empty canvas to log a bug/feature · Drag to
-                    pan · Pinch or ⌘/Ctrl+scroll to zoom</span
+                    Double-click/tap empty canvas to log a bug/feature · Pinch or ⌘/Ctrl+scroll to zoom</span
                 >
             </div>
 
-            <div id="sitemapBackdrop"></div>
-            <div id="sitemap">
-                <div id="sitemapHeader">
-                    <h2>Sitemap</h2>
-                    <button id="closeMap" title="Close">✕</button>
-                </div>
+            <aside id="sitemap">
+                <h2>Sitemap</h2>
                 <div class="smap-tree" id="smapTree"></div>
-            </div>
+            </aside>
 
             <div id="pinCard">
+                <div class="pc-drag" id="pcDrag" title="Drag to move"></div>
                 <div class="pc-row">
                     <div style="flex: 1">
                         <label>Type</label>
@@ -2132,7 +2432,7 @@
                     placeholder="Describe what's wrong or proposed…"
                 ></textarea>
                 <div id="pcAddCommentRow" style="display: none">
-                    <div class="pc-btn" id="pcAddComment">+ Add comment</div>
+                    <div class="pc-btn" id="pcAddComment" data-ui-icon="add">Add comment</div>
                 </div>
                 <div id="pcAdoBlock" class="ado-block" style="display: none">
                     <div class="ado-row">
@@ -2150,21 +2450,19 @@
                                 class="ado-mini-btn"
                                 id="pcAdoEdit"
                                 title="Edit link"
-                            >
-                                ✎
-                            </button>
+                                data-ui-icon="edit"
+                            ></button>
                             <button
                                 class="ado-mini-btn"
                                 id="pcAdoRemove"
                                 title="Remove link"
-                            >
-                                ✕
-                            </button>
+                                data-ui-icon="cancel"
+                            ></button>
                         </div>
                     </div>
                 </div>
-                <div id="pcAdoLinkBtn" class="ado-link-btn">
-                    + Link an Azure DevOps story
+                <div id="pcAdoLinkBtn" class="ado-link-btn" data-ui-icon="add">
+                    Link an Azure DevOps story
                 </div>
                 <div class="pc-actions">
                     <div
@@ -2237,10 +2535,10 @@
             </div>
 
             <div id="presentBar">
-                <button id="presPrev">‹ Prev</button>
+                <button id="presPrev" data-ui-icon="left-arrow">Prev</button>
                 <span id="presLabel">1 / 1</span>
-                <button id="presNext">Next ›</button>
-                <button id="presExit">✕ Exit</button>
+                <button id="presNext" data-ui-icon="right-arrow" data-ui-pos="end">Next</button>
+                <button id="presExit" data-ui-icon="cancel">Exit</button>
             </div>
 
             <div id="diveLayer">
@@ -2304,12 +2602,30 @@
                 return JSON.stringify(obj);
             }
 
+            let applyingRemote = false;
+            const recentSaved = [];
+            function hashStr(str) {
+                let h = 5381;
+                for (let i = 0; i < str.length; i++)
+                    h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+                return h + ":" + str.length;
+            }
+            function rememberSaved(json) {
+                recentSaved.push(hashStr(json));
+                if (recentSaved.length > 30) recentSaved.shift();
+            }
+
             function scheduleCloudSave() {
-                if (!sb) return;
+                // Never write back a board we just received, or a view-only re-render
+                if (!sb || applyingRemote) return;
                 clearTimeout(cloudSaveTimer);
                 cloudSaveTimer = setTimeout(async () => {
+                    cloudSaveTimer = null;
                     try {
-                        lastSavedJson = canon(tree);
+                        const json = canon(tree);
+                        if (json === lastSavedJson) return;
+                        lastSavedJson = json;
+                        rememberSaved(json);
                         await sb
                             .from("boards")
                             .upsert({
@@ -2337,11 +2653,22 @@
                         (payload) => {
                             const remote = payload.new && payload.new.data;
                             if (!remote) return;
+                            // Unsaved local edits win; applying an older echo of our own
+                            // save here is what made new jump screens vanish.
+                            if (cloudSaveTimer) return;
                             const rj = canon(remote);
                             if (rj === lastSavedJson || rj === canon(tree)) return;
+                            if (recentSaved.includes(hashStr(rj))) return;
+                            lastSavedJson = rj;
+                            rememberSaved(rj);
                             tree = remote;
                             if (!pathValid(path)) path = ["root"];
-                            render();
+                            applyingRemote = true;
+                            try {
+                                render();
+                            } finally {
+                                applyingRemote = false;
+                            }
                         },
                     )
                     .subscribe();
@@ -2369,6 +2696,7 @@
                         tree = data.data;
                         if (!pathValid(path)) path = ["root"];
                     } else {
+                        rememberSaved(canon(tree));
                         await sb
                             .from("boards")
                             .upsert({
@@ -2399,33 +2727,76 @@
    badge (where present) is re-added automatically after this
    runs, so you don't need to include it here.
    ============================================================ */
+            const UI_ICONS = {
+                add: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M8 3.25C8.41421 3.25 8.75 3.58579 8.75 4V7.25H12C12.4142 7.25 12.75 7.58579 12.75 8C12.75 8.41421 12.4142 8.75 12 8.75H8.75V12C8.75 12.4142 8.41421 12.75 8 12.75C7.58579 12.75 7.25 12.4142 7.25 12V8.75H4C3.58579 8.75 3.25 8.41421 3.25 8C3.25 7.58579 3.58579 7.25 4 7.25H7.25V4C7.25 3.58579 7.58579 3.25 8 3.25Z" fill="currentColor"/></svg>',
+                minus: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M12 7.25C12.4142 7.25 12.75 7.58579 12.75 8C12.75 8.41421 12.4142 8.75 12 8.75H4C3.58579 8.75 3.25 8.41421 3.25 8C3.25 7.58579 3.58579 7.25 4 7.25H12Z" fill="currentColor"/></svg>',
+                cancel: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10.47 4.46991C10.7629 4.17703 11.2376 4.17703 11.5305 4.46991C11.8232 4.76282 11.8233 5.23764 11.5305 5.53046L9.06079 8.00018L11.5305 10.4699C11.8232 10.7628 11.8233 11.2376 11.5305 11.5305C11.2377 11.8233 10.7629 11.8231 10.47 11.5305L8.00024 9.06073L5.53052 11.5305C5.2377 11.8233 4.76288 11.8231 4.46997 11.5305C4.17708 11.2376 4.17708 10.7628 4.46997 10.4699L6.9397 8.00018L4.46997 5.53046C4.17709 5.23757 4.17709 4.7628 4.46997 4.46991C4.76286 4.17702 5.23762 4.17702 5.53052 4.46991L8.00024 6.93964L10.47 4.46991Z" fill="currentColor"/></svg>',
+                key_down: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10.9696 6.9696C11.2625 6.67675 11.7372 6.67683 12.0302 6.9696C12.323 7.2625 12.323 7.73726 12.0302 8.03015L8.53015 11.5302L8.47351 11.5819C8.17893 11.8222 7.7442 11.8047 7.4696 11.5302L3.9696 8.03015L3.91785 7.97351C3.67765 7.67893 3.69504 7.24417 3.9696 6.9696C4.24417 6.69504 4.67893 6.67765 4.97351 6.91785L5.03015 6.9696L7.99988 9.93933L10.9696 6.9696Z" fill="currentColor"/></svg>',
+                key_right: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5.9696 3.96979C6.26249 3.6769 6.73726 3.67692 7.03015 3.96979L10.5302 7.46979L10.5819 7.52643C10.8222 7.82101 10.8048 8.25573 10.5302 8.53033L7.03015 12.0303L6.97351 12.0821C6.67893 12.3223 6.24418 12.3049 5.9696 12.0303C5.69506 11.7558 5.67762 11.321 5.91785 11.0264L5.9696 10.9698L8.93933 8.00006L5.9696 5.03033C5.67677 4.73747 5.67681 4.26268 5.9696 3.96979Z" fill="currentColor"/></svg>',
+                switch: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.46973 7.46973C4.76262 7.17685 5.23738 7.17685 5.53027 7.46973C5.82315 7.76262 5.82315 8.23738 5.53027 8.53027L3.81055 10.25H8C8.4142 10.25 8.74999 10.5858 8.75 11C8.74999 11.4142 8.4142 11.75 8 11.75H3.81055L5.53027 13.4697L5.58203 13.5264C5.82233 13.8209 5.80487 14.2557 5.53027 14.5303C5.23739 14.8232 4.76262 14.8232 4.46973 14.5303L1.46973 11.5303C1.17685 11.2374 1.17684 10.7626 1.46973 10.4697L4.46973 7.46973ZM10.4697 1.46973C10.7626 1.17686 11.2374 1.17684 11.5303 1.46973L14.5303 4.46973C14.8231 4.76261 14.8231 5.23739 14.5303 5.53027L11.5303 8.53027C11.2374 8.82314 10.7626 8.82314 10.4697 8.53027C10.1768 8.23739 10.1768 7.76262 10.4697 7.46973L12.1895 5.75H8C7.58579 5.75 7.25001 5.41421 7.25 5C7.25001 4.58579 7.58579 4.25 8 4.25H12.1895L10.4697 2.53027L10.418 2.47363C10.1776 2.17905 10.1951 1.74433 10.4697 1.46973Z" fill="currentColor"/></svg>',
+                right_arrow: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8.46973 4.4696C8.74432 4.19507 9.17907 4.1776 9.47363 4.41785L9.53027 4.4696L12.5303 7.4696C12.8231 7.76248 12.8231 8.23725 12.5303 8.53015L9.53027 11.5302C9.23738 11.823 8.76262 11.823 8.46973 11.5302C8.17689 11.2373 8.17685 10.7625 8.46973 10.4696L10.1895 8.74988H4C3.58579 8.74988 3.25 8.41409 3.25 7.99988C3.25006 7.58572 3.58583 7.24988 4 7.24988H10.1895L8.46973 5.53015L8.41797 5.47351C8.17772 5.17893 8.19514 4.74419 8.46973 4.4696Z" fill="currentColor"/></svg>',
+                left_arrow: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.46973 4.46979C6.76262 4.17689 7.23738 4.17689 7.53027 4.46979C7.82311 4.76269 7.82315 5.23746 7.53027 5.53033L5.81055 7.25006H12C12.4142 7.25009 12.75 7.58587 12.75 8.00006C12.75 8.41423 12.4142 8.75003 12 8.75006H5.81055L7.53027 10.4698L7.58203 10.5264C7.82229 10.821 7.80486 11.2557 7.53027 11.5303C7.25569 11.8049 6.82095 11.8223 6.52637 11.5821L6.46973 11.5303L3.46973 8.53033C3.17683 8.23744 3.17683 7.76268 3.46973 7.46979L6.46973 4.46979Z" fill="currentColor"/></svg>',
+                edit: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.3455 5.26841C12.2313 5.23131 12.1323 5.13231 11.9343 4.9343L11.0657 4.06567C10.8677 3.86766 10.7687 3.76866 10.7316 3.65449C10.6989 3.55407 10.6989 3.4459 10.7316 3.34548C10.7687 3.23131 10.8677 3.13231 11.0657 2.9343L11.4343 2.56567L11.4343 2.56566C11.6323 2.36766 11.7313 2.26866 11.8455 2.23156C11.9459 2.19894 12.0541 2.19894 12.1545 2.23156C12.2687 2.26866 12.3677 2.36766 12.5657 2.56567L13.4343 3.4343C13.6323 3.63231 13.7313 3.73131 13.7684 3.84548C13.8011 3.9459 13.8011 4.05407 13.7684 4.15449C13.7313 4.26866 13.6323 4.36766 13.4343 4.56567L13.0657 4.9343C12.8677 5.13231 12.7687 5.23131 12.6545 5.26841C12.5541 5.30104 12.4459 5.30104 12.3455 5.26841ZM3.90962 13.9862C3.85207 14 3.79092 14 3.66863 14H2.8C2.51997 14 2.37996 14 2.273 13.9455C2.17892 13.8976 2.10243 13.8211 2.0545 13.727C2 13.62 2 13.48 2 13.2V12.3314C2 12.2091 2 12.1479 2.01382 12.0904C2.02606 12.0394 2.04627 11.9906 2.07368 11.9458C2.1046 11.8954 2.14784 11.8521 2.23431 11.7657L2.23431 11.7657L8.93431 5.06567C9.13232 4.86766 9.23133 4.76866 9.34549 4.73156C9.44591 4.69894 9.55409 4.69894 9.65451 4.73156C9.76867 4.76866 9.86768 4.86766 10.0657 5.06567L10.9343 5.9343C11.1323 6.13231 11.2313 6.23131 11.2684 6.34548C11.3011 6.4459 11.3011 6.55407 11.2684 6.65449C11.2313 6.76866 11.1323 6.86766 10.9343 7.06567L4.23432 13.7657L4.2343 13.7657C4.14783 13.8522 4.1046 13.8954 4.05414 13.9263C4.00941 13.9537 3.96063 13.9739 3.90962 13.9862Z" fill="currentColor"/></svg>',
+                link: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8.96973 6.46997C9.26259 6.17716 9.73739 6.17719 10.0303 6.46997L10.1475 6.58618C11.4802 7.91908 11.4801 10.0804 10.1475 11.4133L8.28027 13.2805C6.7448 14.8157 4.2552 14.8157 2.71973 13.2805L2.46973 13.0305C1.07249 11.6331 1.07253 9.3674 2.46973 7.96997C2.76256 7.67724 3.23739 7.67732 3.53027 7.96997C3.82281 8.26286 3.82297 8.73773 3.53027 9.03052C2.71886 9.84216 2.71882 11.1584 3.53027 11.97L3.78027 12.22C4.72996 13.1694 6.27004 13.1694 7.21973 12.22L9.08691 10.3528C9.83372 9.60561 9.83383 8.39384 9.08691 7.64673L8.96973 7.53052C8.67698 7.23767 8.67704 6.76285 8.96973 6.46997ZM7.71973 2.71997C9.25522 1.18447 11.7447 1.18455 13.2803 2.71997L13.5303 2.96997C14.9275 4.36745 14.9277 6.63313 13.5303 8.03052C13.2374 8.32325 12.7626 8.32325 12.4697 8.03052C12.1769 7.73766 12.177 7.26287 12.4697 6.96997C13.2813 6.15837 13.2812 4.84221 12.4697 4.03052L12.2197 3.78052C11.27 2.83089 9.72998 2.83081 8.78027 3.78052L6.91309 5.64673C6.16615 6.39391 6.16708 7.60564 6.91406 8.35278L7.03125 8.46997C7.32341 8.76279 7.32357 9.2378 7.03125 9.53052C6.73856 9.82321 6.26365 9.8228 5.9707 9.53052L5.85352 9.41333C4.52074 8.0804 4.51982 5.91915 5.85254 4.58618L7.71973 2.71997Z" fill="currentColor"/></svg>',
+                open_full: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 2.25C13.4142 2.25 13.75 2.58579 13.75 3V7C13.75 7.41421 13.4142 7.75 13 7.75C12.5858 7.75 12.25 7.41421 12.25 7V4.81055L4.81055 12.25H7C7.41421 12.25 7.75 12.5858 7.75 13C7.75 13.4142 7.41421 13.75 7 13.75H3C2.58579 13.75 2.25 13.4142 2.25 13V9C2.25 8.58579 2.58579 8.25 3 8.25C3.41421 8.25 3.75 8.58579 3.75 9V11.1895L11.1895 3.75H9C8.58579 3.75 8.25 3.41421 8.25 3C8.25 2.58579 8.58579 2.25 9 2.25H13Z" fill="currentColor"/></svg>',
+                play: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 5.35289V10.6471C4 11.5797 4 12.046 4.19541 12.3108C4.36577 12.5416 4.62706 12.6881 4.91286 12.7131C5.24067 12.7418 5.63855 12.4987 6.43432 12.0124L10.766 9.36525C11.5046 8.91386 11.8739 8.68816 11.9998 8.3976C12.1098 8.14393 12.1098 7.85607 11.9998 7.6024C11.8739 7.31184 11.5046 7.08614 10.766 6.63475L6.43432 3.98764C5.63855 3.50134 5.24067 3.25819 4.91286 3.28686C4.62706 3.31186 4.36577 3.4584 4.19541 3.68923C4 3.95399 4 4.42029 4 5.35289Z" fill="currentColor"/></svg>',
+                both: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true" style="transform:rotate(45deg)"><path d="M13 2.25C13.4142 2.25 13.75 2.58579 13.75 3V7C13.75 7.41421 13.4142 7.75 13 7.75C12.5858 7.75 12.25 7.41421 12.25 7V4.81055L4.81055 12.25H7C7.41421 12.25 7.75 12.5858 7.75 13C7.75 13.4142 7.41421 13.75 7 13.75H3C2.58579 13.75 2.25 13.4142 2.25 13V9C2.25 8.58579 2.58579 8.25 3 8.25C3.41421 8.25 3.75 8.58579 3.75 9V11.1895L11.1895 3.75H9C8.58579 3.75 8.25 3.41421 8.25 3C8.25 2.58579 8.58579 2.25 9 2.25H13Z" fill="currentColor"/></svg>',
+                none: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M12 7.25C12.4142 7.25 12.75 7.58579 12.75 8C12.75 8.41421 12.4142 8.75 12 8.75H4C3.58579 8.75 3.25 8.41421 3.25 8C3.25 7.58579 3.58579 7.25 4 7.25H12Z" fill="currentColor"/></svg>',
+            };
+            function uiIcon(name) {
+                return UI_ICONS[name.replace(/-/g, "_")] || "";
+            }
+            function applyUiIcons() {
+                document.querySelectorAll("[data-ui-icon]").forEach((el) => {
+                    if (el.querySelector("svg")) return;
+                    el.insertAdjacentHTML(
+                        el.dataset.uiPos === "end" ? "beforeend" : "afterbegin",
+                        uiIcon(el.dataset.uiIcon),
+                    );
+                });
+            }
+
             const ICONS = {
-                select: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 3l14 8.2-6 1.7-2 6L5 3z"/></svg>',
+                select:
+                    '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3.29932 2.4967C3.53165 2.49033 3.71609 2.57557 3.79736 2.61487C3.90572 2.66729 4.02993 2.74249 4.13623 2.80627L12.4995 7.82385L12.6909 7.94006C12.754 7.97939 12.815 8.01908 12.8677 8.05725C12.9383 8.1085 13.1212 8.24203 13.229 8.47229L13.27 8.57678L13.3003 8.69495C13.3528 8.97191 13.285 9.26078 13.1118 9.48792C12.9238 9.73412 12.654 9.81436 12.5581 9.84241C12.4334 9.87885 12.2763 9.90952 12.1333 9.93811L8.45166 10.6735L6.18018 14.0826C6.10185 14.2001 6.01512 14.3313 5.93506 14.4313C5.87231 14.5096 5.69864 14.7233 5.40479 14.8043C5.09275 14.8901 4.75813 14.8194 4.50732 14.6149C4.27145 14.4223 4.19923 14.1575 4.17334 14.0602C4.14046 13.9365 4.11453 13.7814 4.09033 13.6422L2.41162 3.98987C2.3904 3.86784 2.36488 3.72495 2.35498 3.6051C2.3465 3.50204 2.33021 3.25142 2.46924 3.00452L2.53174 2.90784C2.68919 2.69125 2.92861 2.54454 3.19678 2.50549L3.29932 2.4967Z"/></svg>',
                 screenshot:
-                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="14" height="10.5" rx="1.4" opacity="0.45"/><rect x="3" y="9" width="14" height="10.5" rx="1.4"/></svg>',
-                text: "T",
-                image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M21 15.5l-5.5-5-4.5 4.5-3-3-5 5"/></svg>',
-                link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5h5v5"/><path d="M19 5L10 14"/><path d="M18 13v6H5V6h6"/></svg>',
-                pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3.5l3.5 3.5L8 19.5 4 21l1.5-4L17 3.5z"/><path d="M14.5 6l3.5 3.5"/></svg>',
+                    '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2.65332 4.33496C2.9013 4.20585 3.20061 4.2255 3.42969 4.38574L8.42969 7.88574C8.63018 8.02609 8.75 8.25526 8.75 8.5V14C8.75 14.2806 8.59308 14.5373 8.34375 14.666C8.09443 14.7947 7.79416 14.7738 7.56543 14.6113L2.56543 11.0596C2.36752 10.9189 2.25008 10.691 2.25 10.4482V5C2.25 4.72047 2.40546 4.46417 2.65332 4.33496ZM4.39355 2.55859C4.63723 2.2238 5.10649 2.14998 5.44141 2.39355L10.9414 6.39355C11.1353 6.5347 11.25 6.76014 11.25 7V12C11.25 12.4142 10.9142 12.75 10.5 12.75C10.0858 12.75 9.75 12.4142 9.75 12V7.38184L4.55859 3.60645C4.2238 3.36277 4.14998 2.89351 4.39355 2.55859ZM3.75 10.0605L7.25 12.5469V8.88965L3.75 6.43945V10.0605ZM6.89355 1.05859C7.13723 0.723802 7.60649 0.649982 7.94141 0.893555L13.4414 4.89355C13.6353 5.0347 13.75 5.26014 13.75 5.5V10.5C13.75 10.9142 13.4142 11.25 13 11.25C12.5858 11.25 12.25 10.9142 12.25 10.5V5.88184L7.05859 2.10645C6.7238 1.86277 6.64998 1.39351 6.89355 1.05859Z"/></svg>',
+                text:
+                    '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M13.3334 0.583374C14.4839 0.583375 15.4162 1.51594 15.4164 2.66638C15.4164 3.55218 14.8628 4.30642 14.0834 4.60779V11.391C14.8631 11.6922 15.4164 12.4474 15.4164 13.3334C15.4164 14.484 14.484 15.4164 13.3334 15.4164C12.4475 15.4164 11.6933 14.8629 11.392 14.0834H4.60876C4.30748 14.863 3.5523 15.4164 2.66638 15.4164C1.51594 15.4162 0.583375 14.4839 0.583374 13.3334C0.583374 12.4475 1.13685 11.6923 1.91638 11.391V4.60779C1.13708 4.30635 0.583374 3.55207 0.583374 2.66638C0.58355 1.51605 1.51605 0.58355 2.66638 0.583374C3.55219 0.583374 4.30741 1.13691 4.60876 1.91638H11.392C11.6934 1.13703 12.4476 0.583374 13.3334 0.583374ZM2.66638 12.7504C2.34437 12.7505 2.08337 13.0113 2.08337 13.3334C2.08337 13.6554 2.34437 13.9162 2.66638 13.9164C2.98855 13.9164 3.25037 13.6555 3.25037 13.3334C3.25037 13.0112 2.98855 12.7504 2.66638 12.7504ZM13.3334 12.7504C13.0112 12.7504 12.7504 13.0112 12.7504 13.3334C12.7504 13.6555 13.0112 13.9164 13.3334 13.9164C13.6555 13.9164 13.9164 13.6555 13.9164 13.3334C13.9164 13.0112 13.6555 12.7504 13.3334 12.7504ZM4.60876 3.41638C4.3975 3.96331 3.96331 4.3975 3.41638 4.60876V11.391C3.96327 11.6022 4.39744 12.0365 4.60876 12.5834H11.392C11.6033 12.0367 12.0367 11.6022 12.5834 11.391V4.60779C12.0367 4.39642 11.6022 3.96316 11.391 3.41638H4.60876ZM10.0004 5.25037C10.4144 5.25054 10.7504 5.58626 10.7504 6.00037C10.7502 6.41432 10.4143 6.75019 10.0004 6.75037H8.75037V10.0004C8.75019 10.4143 8.41432 10.7502 8.00037 10.7504C7.58626 10.7504 7.25054 10.4144 7.25037 10.0004V6.75037H6.00037C5.58626 6.75037 5.25054 6.41443 5.25037 6.00037C5.25037 5.58615 5.58615 5.25037 6.00037 5.25037H10.0004ZM2.66638 2.08337C2.34447 2.08355 2.08355 2.34447 2.08337 2.66638C2.08337 2.98844 2.34437 3.25019 2.66638 3.25037C2.98855 3.25037 3.25037 2.98855 3.25037 2.66638C3.25019 2.34437 2.98844 2.08337 2.66638 2.08337ZM13.3334 2.08337C13.0113 2.08337 12.7505 2.34437 12.7504 2.66638C12.7504 2.98855 13.0112 3.25037 13.3334 3.25037C13.6555 3.25037 13.9164 2.98855 13.9164 2.66638C13.9162 2.34437 13.6554 2.08337 13.3334 2.08337Z"/></svg>',
+                image:
+                    '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M11.333 1.25C11.7873 1.25 12.1737 1.24961 12.4893 1.27539C12.8135 1.30189 13.1291 1.36003 13.4307 1.51367C13.8852 1.74533 14.2547 2.11483 14.4863 2.56934C14.64 2.87087 14.6981 3.18653 14.7246 3.51074C14.7504 3.82628 14.75 4.21267 14.75 4.66699V11.333C14.75 11.7873 14.7504 12.1737 14.7246 12.4893C14.6981 12.8135 14.64 13.1291 14.4863 13.4307C14.2547 13.8852 13.8852 14.2547 13.4307 14.4863C13.1291 14.64 12.8135 14.6981 12.4893 14.7246C12.1737 14.7504 11.7873 14.75 11.333 14.75H4.66699C4.21266 14.75 3.82629 14.7504 3.51074 14.7246C3.18651 14.6981 2.87088 14.64 2.56934 14.4863C2.11482 14.2547 1.74533 13.8852 1.51367 13.4307C1.36004 13.1291 1.30189 12.8135 1.27539 12.4893C1.24961 12.1737 1.25 11.7873 1.25 11.333V4.66699C1.25 4.21267 1.24961 3.82628 1.27539 3.51074C1.3019 3.18653 1.36003 2.87087 1.51367 2.56934C1.74533 2.11483 2.11483 1.74533 2.56934 1.51367C2.87088 1.36003 3.18652 1.30189 3.51074 1.27539C3.82629 1.24961 4.21266 1.25 4.66699 1.25H11.333ZM4.66699 2.75C4.18791 2.75 3.87311 2.75088 3.63281 2.77051C3.40219 2.78937 3.30595 2.8217 3.25098 2.84961C3.0785 2.93749 2.93749 3.07851 2.84961 3.25098C2.8217 3.30594 2.78937 3.4022 2.77051 3.63281C2.75088 3.8731 2.75 4.18793 2.75 4.66699V11.333C2.75 11.8121 2.75088 12.1269 2.77051 12.3672C2.78937 12.5978 2.8217 12.694 2.84961 12.749C2.93749 12.9215 3.0785 13.0625 3.25098 13.1504C3.30594 13.1783 3.40217 13.2106 3.63281 13.2295C3.87311 13.2491 4.18791 13.25 4.66699 13.25H11.333C11.8121 13.25 12.1269 13.2491 12.3672 13.2295C12.5978 13.2106 12.6941 13.1783 12.749 13.1504C12.9215 13.0625 13.0625 12.9215 13.1504 12.749C13.1783 12.694 13.2106 12.5978 13.2295 12.3672C13.2491 12.1269 13.25 11.8121 13.25 11.333V4.66699C13.25 4.18793 13.2491 3.8731 13.2295 3.63281C13.2106 3.4022 13.1783 3.30594 13.1504 3.25098C13.0625 3.07851 12.9215 2.93749 12.749 2.84961C12.6941 2.8217 12.5978 2.78937 12.3672 2.77051C12.1269 2.75088 11.8121 2.75 11.333 2.75H4.66699ZM6.97363 8.58105C7.42545 8.44591 7.90756 8.44591 8.35938 8.58105C8.65676 8.67002 8.90574 8.82412 9.14258 9.00391C9.37194 9.17803 9.63188 9.40987 9.93652 9.68066L11.165 10.7725L11.2197 10.8262C11.4771 11.1061 11.4856 11.5417 11.2275 11.832C10.9523 12.1415 10.4775 12.1687 10.168 11.8936L8.94043 10.8018C8.61846 10.5156 8.40774 10.3301 8.23535 10.1992C8.0707 10.0742 7.98597 10.0354 7.92969 10.0186C7.7584 9.96732 7.5756 9.96737 7.4043 10.0186C7.34802 10.0354 7.26264 10.074 7.09766 10.1992C6.92535 10.3301 6.71524 10.5158 6.39355 10.8018L5.16504 11.8936C4.85559 12.1686 4.38169 12.1412 4.10645 11.832C3.8313 11.5225 3.85846 11.0477 4.16797 10.7725L5.39648 9.68066C5.70124 9.40977 5.96199 9.17806 6.19141 9.00391C6.42807 8.82428 6.6765 8.67 6.97363 8.58105ZM10 3.91699C11.1506 3.91699 12.083 4.84942 12.083 6C12.083 7.15059 11.1506 8.08301 10 8.08301C8.84941 8.08301 7.91699 7.15059 7.91699 6C7.91701 4.84942 8.84942 3.91699 10 3.91699ZM10 5.41699C9.67785 5.41699 9.41701 5.67785 9.41699 6C9.41699 6.32217 9.67783 6.58301 10 6.58301C10.3222 6.58301 10.583 6.32217 10.583 6C10.583 5.67785 10.3222 5.41699 10 5.41699Z"/></svg>',
+                link:
+                    '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8.96973 6.46997C9.26259 6.17716 9.73739 6.17719 10.0303 6.46997L10.1475 6.58618C11.4802 7.91908 11.4801 10.0804 10.1475 11.4133L8.28027 13.2805C6.7448 14.8157 4.2552 14.8157 2.71973 13.2805L2.46973 13.0305C1.07249 11.6331 1.07253 9.3674 2.46973 7.96997C2.76256 7.67724 3.23739 7.67732 3.53027 7.96997C3.82281 8.26286 3.82297 8.73773 3.53027 9.03052C2.71886 9.84216 2.71882 11.1584 3.53027 11.97L3.78027 12.22C4.72996 13.1694 6.27004 13.1694 7.21973 12.22L9.08691 10.3528C9.83372 9.60561 9.83383 8.39384 9.08691 7.64673L8.96973 7.53052C8.67698 7.23767 8.67704 6.76285 8.96973 6.46997ZM7.71973 2.71997C9.25522 1.18447 11.7447 1.18455 13.2803 2.71997L13.5303 2.96997C14.9275 4.36745 14.9277 6.63313 13.5303 8.03052C13.2374 8.32325 12.7626 8.32325 12.4697 8.03052C12.1769 7.73766 12.177 7.26287 12.4697 6.96997C13.2813 6.15837 13.2812 4.84221 12.4697 4.03052L12.2197 3.78052C11.27 2.83089 9.72998 2.83081 8.78027 3.78052L6.91309 5.64673C6.16615 6.39391 6.16708 7.60564 6.91406 8.35278L7.03125 8.46997C7.32341 8.76279 7.32357 9.2378 7.03125 9.53052C6.73856 9.82321 6.26365 9.8228 5.9707 9.53052L5.85352 9.41333C4.52074 8.0804 4.51982 5.91915 5.85254 4.58618L7.71973 2.71997Z"/></svg>',
+                pen:
+                    '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M10.9844 2.82431C11.6075 2.35714 12.4796 2.41832 13.0303 2.96884C13.5811 3.51961 13.6431 4.39256 13.1758 5.01572L10.9893 7.92783L11.0303 7.96884C11.2831 8.22159 11.3223 8.61867 11.1241 8.91611L9.12409 11.9161C9.11399 11.9312 9.10187 11.9449 9.09089 11.9591C9.07279 11.9823 9.05447 12.006 9.03327 12.0274C9.03235 12.0284 9.03038 12.0286 9.02936 12.0294L9.03034 12.0304L6.53034 14.5304C6.23751 14.8229 5.76263 14.8229 5.46979 14.5304C5.1769 14.2375 5.1769 13.7617 5.46979 13.4688L7.43854 11.4991L4.50007 8.56064L2.53034 10.5304C2.23751 10.8229 1.76263 10.8229 1.46979 10.5304C1.1769 10.2375 1.1769 9.76174 1.46979 9.46884L3.96979 6.96884C3.98756 6.95114 4.00662 6.93416 4.02643 6.91806C4.04787 6.90056 4.07003 6.884 4.09284 6.86923L7.08405 4.87607L7.19928 4.81259C7.47779 4.69058 7.80906 4.74778 8.03034 4.96884L8.07038 5.00888L10.9844 2.82431ZM5.6778 7.6163L8.38385 10.3224L9.53425 8.59482L7.40436 6.46494L5.6778 7.6163ZM11.9698 4.03037C11.947 4.00757 11.9108 4.00455 11.8848 4.02353L9.14167 6.08017L9.91901 6.85751L11.9757 4.11533C11.9949 4.08943 11.9925 4.05331 11.9698 4.03037Z"/></svg>',
                 highlight:
-                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 12.5l6-6 3 3-6 6h-3v-3z"/><path d="M3.5 20.5l3-3"/><path d="M2.5 20.5h5"/></svg>',
-                arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6"/><path d="M9 6h9v9"/></svg>',
-                frame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5"/><path d="M15 4h5v5"/><path d="M20 15v5h-5"/><path d="M9 20H4v-5"/></svg>',
-                lasso: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.5" y="3.5" width="17" height="17" rx="2" stroke-dasharray="3 3.2"/></svg>',
-                snap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>',
-                undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5h11a5.5 5.5 0 1 1 0 11h-2.5"/><path d="M7.5 4L3 8.5L7.5 13"/></svg>',
-                redo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.5H10a5.5 5.5 0 1 0 0 11h2.5"/><path d="M16.5 4L21 8.5L16.5 13"/></svg>',
-                logo: "LOGO",
-                overlay: "◐",
-                present: "▶",
-                exportIcon: "⤓",
+                    '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.56183 2.75315C9.78144 2.7714 9.98257 2.88534 10.1107 3.06467L12.6107 6.56467C12.8233 6.86295 12.7897 7.27139 12.5306 7.53049L11.5589 8.50119C11.8222 8.79567 11.8134 9.24768 11.5306 9.53049L6.53058 14.5305C6.23777 14.8233 5.76295 14.8231 5.47004 14.5305C5.17715 14.2376 5.17715 13.7628 5.47004 13.4699L7.93976 11.0002L5.00031 8.06076L2.53058 10.5305C2.23777 10.8233 1.76295 10.8232 1.47004 10.5305C1.17714 10.2376 1.17714 9.76284 1.47004 9.46994L6.47004 4.46994L6.52668 4.41818C6.81021 4.18693 7.22096 4.19686 7.4964 4.4426L8.97004 2.96994L9.03156 2.91525C9.18035 2.79603 9.36977 2.73733 9.56183 2.75315ZM6.06086 7.00022L9.00031 9.93967L9.93976 9.00022L7.00031 6.06076L6.06086 7.00022ZM8.55988 5.49924L10.4993 7.43869L11.0208 6.91818L9.40461 4.65549L8.55988 5.49924Z"/></svg>',
+                arrow:
+                    '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M11.9999 3.25C12.4141 3.25003 12.7499 3.58581 12.7499 4V9C12.7499 9.41419 12.4141 9.74997 11.9999 9.75C11.5857 9.75 11.2499 9.41421 11.2499 9V5.81055L3.53022 13.5303C3.23733 13.8232 2.76257 13.8231 2.46967 13.5303C2.17678 13.2374 2.17678 12.7626 2.46967 12.4697L10.1894 4.75H6.99994C6.58573 4.75 6.24994 4.41421 6.24994 4C6.24994 3.58579 6.58573 3.25 6.99994 3.25H11.9999Z"/></svg>',
+                frame:
+                    '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2.99976 9.25C3.41397 9.25 3.74976 9.58579 3.74976 10V12C3.74976 12.138 3.8618 12.2499 3.99976 12.25H5.99976C6.41397 12.25 6.74976 12.5858 6.74976 13C6.74976 13.4142 6.41397 13.75 5.99976 13.75H3.99976C3.03337 13.7499 2.24976 12.9664 2.24976 12V10C2.24976 9.58587 2.58565 9.25013 2.99976 9.25ZM12.9998 9.25C13.414 9.25 13.7498 9.58579 13.7498 10V12C13.7498 12.9665 12.9663 13.75 11.9998 13.75H9.99976C9.58567 13.7498 9.24976 13.4141 9.24976 13C9.24976 12.5859 9.58567 12.2502 9.99976 12.25H11.9998C12.1378 12.25 12.2498 12.1381 12.2498 12V10C12.2498 9.58588 12.5857 9.25015 12.9998 9.25ZM9.49976 5.75C9.91397 5.75 10.2498 6.08579 10.2498 6.5V9.5C10.2498 9.91421 9.91397 10.25 9.49976 10.25H6.49976C6.08567 10.2498 5.74976 9.91412 5.74976 9.5V6.5C5.74976 6.08588 6.08567 5.75015 6.49976 5.75H9.49976ZM7.24976 8.75H8.74976V7.25H7.24976V8.75ZM5.99976 2.25C6.41397 2.25 6.74976 2.58579 6.74976 3C6.74976 3.41421 6.41397 3.75 5.99976 3.75H3.99976C3.86181 3.75015 3.74976 3.86202 3.74976 4V6C3.74976 6.41421 3.41397 6.75 2.99976 6.75C2.58567 6.74985 2.24976 6.41412 2.24976 6V4C2.24976 3.0336 3.03339 2.25015 3.99976 2.25H5.99976ZM11.9998 2.25C12.9663 2.25 13.7498 3.0335 13.7498 4V6C13.7498 6.41421 13.414 6.75 12.9998 6.75C12.5857 6.74982 12.2498 6.4141 12.2498 6V4C12.2498 3.86193 12.1378 3.75 11.9998 3.75H9.99976C9.5857 3.74982 9.24976 3.4141 9.24976 3C9.24976 2.5859 9.5857 2.25018 9.99976 2.25H11.9998Z"/></svg>',
+                lasso:
+                    '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 11.75C2.41421 11.75 2.75 12.0858 2.75 12.5V13.25H3.5C3.91421 13.25 4.25 13.5858 4.25 14C4.25 14.4142 3.91421 14.75 3.5 14.75H2C1.80109 14.75 1.61038 14.6709 1.46973 14.5303C1.32907 14.3896 1.25 14.1989 1.25 14V12.5C1.25 12.0858 1.58579 11.75 2 11.75ZM9.5 13.25C9.91421 13.25 10.25 13.5858 10.25 14C10.25 14.4142 9.91421 14.75 9.5 14.75H6.5C6.08579 14.75 5.75 14.4142 5.75 14C5.75 13.5858 6.08579 13.25 6.5 13.25H9.5ZM14 11.75C14.4142 11.75 14.75 12.0858 14.75 12.5V14C14.75 14.4142 14.4142 14.75 14 14.75H12.5C12.0858 14.75 11.75 14.4142 11.75 14C11.75 13.5858 12.0858 13.25 12.5 13.25H13.25V12.5C13.25 12.0858 13.5858 11.75 14 11.75ZM2 5.75C2.41421 5.75 2.75 6.08579 2.75 6.5V9.5C2.75 9.91421 2.41421 10.25 2 10.25C1.58579 10.25 1.25 9.91421 1.25 9.5V6.5C1.25 6.08579 1.58579 5.75 2 5.75ZM14 5.75C14.4142 5.75 14.75 6.08579 14.75 6.5V9.5C14.75 9.91421 14.4142 10.25 14 10.25C13.5858 10.25 13.25 9.91421 13.25 9.5V6.5C13.25 6.08579 13.5858 5.75 14 5.75ZM3.5 1.25C3.91421 1.25 4.25 1.58579 4.25 2C4.25 2.41421 3.91421 2.75 3.5 2.75H2.75V3.5C2.75 3.91421 2.41421 4.25 2 4.25C1.58579 4.25 1.25 3.91421 1.25 3.5V2C1.25 1.80109 1.32907 1.61038 1.46973 1.46973C1.61038 1.32907 1.80109 1.25 2 1.25H3.5ZM14 1.25C14.4142 1.25 14.75 1.58579 14.75 2V3.5C14.75 3.91421 14.4142 4.25 14 4.25C13.5858 4.25 13.25 3.91421 13.25 3.5V2.75H12.5C12.0858 2.75 11.75 2.41421 11.75 2C11.75 1.58579 12.0858 1.25 12.5 1.25H14ZM9.5 1.25C9.91421 1.25 10.25 1.58579 10.25 2C10.25 2.41421 9.91421 2.75 9.5 2.75H6.5C6.08579 2.75 5.75 2.41421 5.75 2C5.75 1.58579 6.08579 1.25 6.5 1.25H9.5Z"/></svg>',
+                snap:
+                    '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3 2C3 2.55228 2.55228 3 2 3C1.44772 3 1 2.55228 1 2C1 1.44772 1.44772 1 2 1C2.55228 1 3 1.44772 3 2Z"/><path d="M3 8C3 8.55228 2.55228 9 2 9C1.44772 9 1 8.55228 1 8C1 7.44772 1.44772 7 2 7C2.55228 7 3 7.44772 3 8Z"/><path d="M3 14C3 14.5523 2.55228 15 2 15C1.44772 15 1 14.5523 1 14C1 13.4477 1.44772 13 2 13C2.55228 13 3 13.4477 3 14Z"/><path d="M9 2C9 2.55228 8.55228 3 8 3C7.44772 3 7 2.55228 7 2C7 1.44772 7.44772 1 8 1C8.55228 1 9 1.44772 9 2Z"/><path d="M9 14C9 14.5523 8.55228 15 8 15C7.44772 15 7 14.5523 7 14C7 13.4477 7.44772 13 8 13C8.55228 13 9 13.4477 9 14Z"/><path d="M15 2C15 2.55228 14.5523 3 14 3C13.4477 3 13 2.55228 13 2C13 1.44772 13.4477 1 14 1C14.5523 1 15 1.44772 15 2Z"/><path d="M15 8C15 8.55228 14.5523 9 14 9C13.4477 9 13 8.55228 13 8C13 7.44772 13.4477 7 14 7C14.5523 7 15 7.44772 15 8Z"/><path d="M15 14C15 14.5523 14.5523 15 14 15C13.4477 15 13 14.5523 13 14C13 13.4477 13.4477 13 14 13C14.5523 13 15 13.4477 15 14Z"/><path d="M6 7C6 6.44772 6.44772 6 7 6H9C9.55228 6 10 6.44772 10 7V9C10 9.55228 9.55228 10 9 10H7C6.44772 10 6 9.55228 6 9V7Z"/></svg>',
+                undo:
+                    '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M5.46973 2.46979C5.76262 2.1769 6.23738 2.17691 6.53027 2.46979C6.80485 2.7444 6.82234 3.17913 6.58203 3.47369L6.53027 3.53033L4.81055 5.25006H9.5C11.8472 5.25007 13.75 7.15286 13.75 9.50006C13.75 11.8472 11.8472 13.7501 9.5 13.7501H6C5.58581 13.7501 5.25004 13.4142 5.25 13.0001C5.25 12.5858 5.58579 12.2501 6 12.2501H9.5C11.0188 12.2501 12.25 11.0188 12.25 9.50006C12.25 7.98128 11.0188 6.75007 9.5 6.75006H4.81055L6.53027 8.46979C6.82314 8.76268 6.82315 9.23745 6.53027 9.53033C6.23739 9.82317 5.76261 9.82318 5.46973 9.53033L2.46973 6.53033C2.32909 6.3897 2.25002 6.19895 2.25 6.00006C2.25 5.80116 2.3291 5.61044 2.46973 5.46979L5.46973 2.46979Z"/></svg>',
+                redo:
+                    '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.46973 2.46979C9.76262 2.17691 10.2374 2.1769 10.5303 2.46979L13.5303 5.46979C13.6709 5.61044 13.75 5.80116 13.75 6.00006C13.75 6.19895 13.6709 6.3897 13.5303 6.53033L10.5303 9.53033C10.2374 9.82318 9.76261 9.82317 9.46973 9.53033C9.17685 9.23745 9.17686 8.76268 9.46973 8.46979L11.1895 6.75006H6.5C4.98122 6.75007 3.75 7.98128 3.75 9.50006C3.75004 11.0188 4.98125 12.2501 6.5 12.2501H10C10.4142 12.2501 10.75 12.5858 10.75 13.0001C10.75 13.4142 10.4142 13.7501 10 13.7501H6.5C4.15282 13.7501 2.25004 11.8472 2.25 9.50006C2.25 7.15286 4.15279 5.25007 6.5 5.25006H11.1895L9.46973 3.53033L9.41797 3.47369C9.17766 3.17913 9.19515 2.7444 9.46973 2.46979Z"/></svg>',
+                logo:
+                    '<svg viewBox="-0.1 -0.1 16.2 16.2" fill="currentColor" aria-hidden="true"><path d="M8.85754 14.1396C9.14881 13.8453 9.62361 13.8426 9.91809 14.1338C10.2122 14.4249 10.2147 14.8989 9.92395 15.1934C9.4064 15.7167 8.75433 16.0829 8.00012 16.083C7.24582 16.083 6.59389 15.7168 6.07629 15.1934C5.78529 14.8989 5.78782 14.425 6.08215 14.1338C6.37657 13.8427 6.85143 13.8445 7.1427 14.1387C7.47143 14.4711 7.76186 14.5829 8.00012 14.583C8.23831 14.5829 8.52896 14.4719 8.85754 14.1396ZM7.27454 4.2627C7.43424 3.88069 7.87389 3.6999 8.25598 3.85938C8.87748 4.11902 9.50934 4.4307 10.1368 4.79297C11.9614 5.84636 13.4511 7.15394 14.3741 8.44531C15.2539 9.67614 15.7923 11.1627 15.0948 12.3711C14.7013 13.0527 14.0199 13.4385 13.2706 13.6162C12.524 13.7932 11.6478 13.7826 10.7277 13.6299C10.3194 13.5619 10.0429 13.176 10.1105 12.7676C10.1783 12.359 10.5652 12.0826 10.9738 12.1504C11.7694 12.2824 12.4326 12.273 12.9249 12.1562C13.414 12.0402 13.672 11.8365 13.796 11.6221C14.0188 11.2363 13.9699 10.4583 13.1544 9.31738C12.3822 8.23699 11.0696 7.06434 9.38684 6.09277C8.81351 5.76176 8.2392 5.47768 7.67786 5.24316C7.29593 5.08344 7.11512 4.64474 7.27454 4.2627ZM1.85559 7.63379C2.11858 7.31395 2.59131 7.26746 2.91125 7.53027C3.23073 7.79324 3.27726 8.2661 3.01477 8.58594C2.50257 9.20896 2.17844 9.78774 2.03333 10.2725C1.88914 10.7544 1.93683 11.0802 2.06067 11.2949C2.2836 11.6806 2.98176 12.0263 4.37708 11.8906C5.69864 11.762 7.37041 11.2125 9.05286 10.2412C9.62604 9.91028 10.159 9.55432 10.6427 9.18555C10.9721 8.93439 11.4433 8.99777 11.6945 9.32715C11.9453 9.65651 11.8811 10.1269 11.5519 10.3779C11.0163 10.7863 10.4303 11.1778 9.80286 11.54C7.97857 12.5932 6.10229 13.23 4.52258 13.3838C3.01676 13.5303 1.45964 13.2532 0.761841 12.0449C0.368401 11.3633 0.375116 10.5805 0.595825 9.84277C0.815814 9.10754 1.26319 8.35438 1.85559 7.63379ZM8.00012 -0.0839844C8.78693 -0.0839037 9.46091 0.314267 9.98938 0.874023C10.516 1.43207 10.9457 2.19616 11.2736 3.06934C11.419 3.4571 11.2219 3.8896 10.8341 4.03516C10.4465 4.18029 10.0148 3.9842 9.86926 3.59668C9.58585 2.84178 9.24669 2.27228 8.89954 1.9043C8.55421 1.53839 8.24802 1.41613 8.00012 1.41602C7.55465 1.4161 6.90652 1.84868 6.32629 3.125C5.77682 4.33395 5.41617 6.05702 5.41614 8C5.41615 8.66186 5.45871 9.30104 5.53625 9.9043C5.58894 10.315 5.2976 10.6913 4.88684 10.7441C4.47642 10.7964 4.10085 10.5061 4.04797 10.0957C3.9621 9.42765 3.91614 8.72455 3.91614 8C3.91616 5.89322 4.30228 3.94899 4.95911 2.50391C5.58521 1.12648 6.6047 -0.0839665 8.00012 -0.0839844ZM8.00696 7.25C8.42091 7.25025 8.7559 7.58601 8.75598 8C8.7559 8.41415 8.42015 8.75 8.00598 8.75H8.00012C7.58608 8.74997 7.25036 8.41399 7.25012 8C7.25036 7.58625 7.58544 7.25041 7.99915 7.25H8.00696ZM2.82727 3.06641C3.22778 2.96177 3.63736 3.20205 3.74231 3.60254C3.84703 4.003 3.60751 4.41248 3.20715 4.51758C2.75501 4.63606 2.51288 4.83182 2.39368 5.03809C2.27466 5.24437 2.22643 5.55138 2.34973 6.00195C2.45909 6.40115 2.22427 6.81402 1.82532 6.92383C1.42593 7.03324 1.01203 6.79872 0.902466 6.39941C0.707983 5.68943 0.717679 4.94136 1.09485 4.28809C1.47204 3.63489 2.1152 3.25295 2.82727 3.06641ZM12.1144 3.27637C12.2193 2.87567 12.6297 2.63526 13.0304 2.74023C13.7424 2.92682 14.3857 3.30871 14.7628 3.96191C15.1398 4.61511 15.1487 5.36339 14.9542 6.07324C14.8446 6.47228 14.4316 6.70685 14.0323 6.59766C13.6332 6.48809 13.3987 6.07603 13.5079 5.67676C13.6314 5.22604 13.5829 4.9183 13.464 4.71191C13.3449 4.50561 13.1026 4.30995 12.6505 4.19141C12.25 4.08649 12.0098 3.67686 12.1144 3.27637Z"/></svg>',
+                present: UI_ICONS.play,
+                exportIcon:
+                    '<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M2.25391 8.92285C2.29253 8.54488 2.61183 8.25 3 8.25C3.41421 8.25 3.75 8.58579 3.75 9L3.75 12C3.75 12.1381 3.86193 12.25 4 12.25L12 12.25C12.1381 12.25 12.25 12.1381 12.25 12L12.25 9C12.25 8.58579 12.5858 8.25 13 8.25C13.4142 8.25 13.75 8.58579 13.75 9L13.75 12C13.75 12.9665 12.9665 13.75 12 13.75L4 13.75C3.0335 13.75 2.25 12.9665 2.25 12L2.25 9L2.25391 8.92285ZM4.41797 6.47363C4.17766 6.17905 4.19512 5.74433 4.46973 5.46973C4.74433 5.19512 5.17905 5.17766 5.47363 5.41797L5.53027 5.46973L7.25 7.18945L7.25 2C7.25 1.58579 7.58579 1.25 8 1.25C8.41421 1.25 8.75 1.58579 8.75 2L8.75 7.18945L10.4697 5.46973C10.7626 5.17683 11.2374 5.17683 11.5303 5.46973C11.8232 5.76262 11.8232 6.23738 11.5303 6.53027L8.53027 9.53027L8.41602 9.62402C8.29372 9.70555 8.14915 9.75 8 9.75C7.80109 9.75 7.61038 9.67092 7.46973 9.53027L4.46973 6.53027L4.41797 6.47363Z"/></svg>',
                 newBoard:
                     '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h9l5 5v11H5z"/><path d="M14 4v5h5"/><path d="M12 12v6"/><path d="M9 15h6"/></svg>',
-                clearCanvas:
-                    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></svg>',
-                sitemap: "⊞",
+                sitemap:
+                    '<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M4 1.25C5.24264 1.25 6.25 2.25736 6.25 3.5C6.25 4.47922 5.62327 5.30895 4.75 5.61816V7.75H6.88086C7.18999 6.87656 8.02067 6.25 9 6.25C10.2426 6.25 11.25 7.25736 11.25 8.5C11.25 9.74264 10.2426 10.75 9 10.75C8.02067 10.75 7.18999 10.1234 6.88086 9.25H4.75V9.7998C4.75 10.3722 4.75024 10.7569 4.77441 11.0527C4.79788 11.3397 4.84059 11.4768 4.88672 11.5674C5.00655 11.8025 5.1975 11.9935 5.43262 12.1133C5.52316 12.1594 5.66027 12.2021 5.94727 12.2256C6.24314 12.2498 6.62777 12.25 7.2002 12.25H9.88086C10.19 11.3766 11.0207 10.75 12 10.75C13.2426 10.75 14.25 11.7574 14.25 13C14.25 14.2426 13.2426 15.25 12 15.25C11.0207 15.25 10.19 14.6234 9.88086 13.75H7.2002C6.65252 13.75 6.19632 13.751 5.8252 13.7207C5.44546 13.6897 5.08909 13.6219 4.75195 13.4502C4.23451 13.1865 3.81346 12.7655 3.5498 12.248C3.37809 11.9109 3.31033 11.5545 3.2793 11.1748C3.24897 10.8037 3.25 10.3475 3.25 9.7998V5.61816C2.37673 5.30895 1.75 4.47922 1.75 3.5C1.75 2.25736 2.75736 1.25 4 1.25ZM12 12.25C11.5858 12.25 11.25 12.5858 11.25 13C11.25 13.4142 11.5858 13.75 12 13.75C12.4142 13.75 12.75 13.4142 12.75 13C12.75 12.5858 12.4142 12.25 12 12.25ZM9 7.75C8.58578 7.75 8.25 8.08579 8.25 8.5C8.25001 8.91422 8.5858 9.25 9 9.25C9.41421 9.25 9.75 8.91421 9.75 8.5C9.75 8.08579 9.41421 7.75 9 7.75ZM4 2.75C3.58579 2.75 3.25 3.08579 3.25 3.5C3.25 3.91421 3.58579 4.25 4 4.25C4.41421 4.25 4.75 3.91421 4.75 3.5C4.75 3.08579 4.41421 2.75 4 2.75Z"/></svg>',
+                legend:
+                    '<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M5.20056 8.74998C5.32804 8.74998 5.4694 8.74988 5.59021 8.75975C5.71987 8.7704 5.89129 8.79679 6.06775 8.8867C6.30272 9.00654 6.49388 9.19759 6.61365 9.4326C6.70359 9.60919 6.72998 9.78047 6.7406 9.91014C6.75048 10.0311 6.75037 10.1722 6.75037 10.2998V12.7002C6.75037 12.8277 6.75048 12.9689 6.7406 13.0898C6.72998 13.2195 6.70358 13.3908 6.61365 13.5674C6.49388 13.8024 6.30271 13.9934 6.06775 14.1133C5.89129 14.2032 5.71987 14.2296 5.59021 14.2402C5.4694 14.2501 5.32804 14.25 5.20056 14.25H2.80017C2.67273 14.25 2.53137 14.2501 2.41052 14.2402C2.28089 14.2296 2.10951 14.2031 1.93298 14.1133C1.69792 13.9935 1.50692 13.8024 1.38708 13.5674C1.29709 13.3907 1.27076 13.2195 1.26013 13.0898C1.25025 12.9689 1.25037 12.8278 1.25037 12.7002V10.2998C1.25037 10.1722 1.25025 10.0311 1.26013 9.91014C1.27076 9.78044 1.29709 9.60923 1.38708 9.4326C1.50692 9.19757 1.69793 9.0065 1.93298 8.8867C2.10951 8.79683 2.2809 8.77037 2.41052 8.75975C2.53137 8.7499 2.67273 8.74998 2.80017 8.74998H5.20056ZM12.0004 12.25C12.4144 12.2502 12.7504 12.5859 12.7504 13C12.7504 13.4141 12.4144 13.7498 12.0004 13.75H9.00037C8.58615 13.75 8.25037 13.4142 8.25037 13C8.25038 12.5858 8.58616 12.25 9.00037 12.25H12.0004ZM2.75037 12.749C2.76592 12.749 2.78275 12.75 2.80017 12.75H5.20056C5.21762 12.75 5.23412 12.749 5.24939 12.749C5.2494 12.7336 5.25037 12.7174 5.25037 12.7002V10.2998C5.25037 10.2822 5.2494 10.2657 5.24939 10.25H2.75037V12.749ZM14.5004 9.24998C14.9144 9.25021 15.2504 9.58592 15.2504 9.99998C15.2504 10.4141 14.9144 10.7498 14.5004 10.75H9.00037C8.58615 10.75 8.25037 10.4142 8.25037 9.99998C8.25038 9.58578 8.58616 9.24998 9.00037 9.24998H14.5004ZM5.20056 1.74998C5.32804 1.74998 5.4694 1.74988 5.59021 1.75975C5.71987 1.7704 5.89129 1.79679 6.06775 1.8867C6.30272 2.00654 6.49388 2.19759 6.61365 2.4326C6.70359 2.60919 6.72998 2.78047 6.7406 2.91014C6.75048 3.03107 6.75037 3.17222 6.75037 3.29979V5.70018C6.75037 5.82775 6.75048 5.9689 6.7406 6.08983C6.72998 6.21949 6.70358 6.39079 6.61365 6.56737C6.49388 6.80237 6.30271 6.99343 6.06775 7.11327C5.89129 7.20318 5.71987 7.22957 5.59021 7.24022C5.4694 7.25009 5.32804 7.24999 5.20056 7.24998H2.80017C2.67273 7.24999 2.53137 7.25007 2.41052 7.24022C2.28089 7.2296 2.10951 7.20314 1.93298 7.11327C1.69792 6.99347 1.50692 6.80241 1.38708 6.56737C1.29709 6.39073 1.27076 6.21953 1.26013 6.08983C1.25025 5.96889 1.25037 5.82776 1.25037 5.70018V3.29979C1.25037 3.17221 1.25025 3.03107 1.26013 2.91014C1.27076 2.78044 1.29709 2.60923 1.38708 2.4326C1.50692 2.19757 1.69793 2.0065 1.93298 1.8867C2.10951 1.79683 2.2809 1.77037 2.41052 1.75975C2.53137 1.7499 2.67273 1.74998 2.80017 1.74998H5.20056ZM12.0004 5.24998C12.4144 5.25021 12.7504 5.58592 12.7504 5.99998C12.7504 6.41406 12.4144 6.74976 12.0004 6.74998H9.00037C8.58615 6.74998 8.25037 6.4142 8.25037 5.99998C8.25038 5.58578 8.58616 5.24998 9.00037 5.24998H12.0004ZM2.75037 5.74901C2.76592 5.74904 2.78275 5.74998 2.80017 5.74998H5.20056C5.21762 5.74997 5.23412 5.74902 5.24939 5.74901C5.2494 5.73363 5.25037 5.71738 5.25037 5.70018V3.29979C5.25037 3.28223 5.2494 3.26566 5.24939 3.24998H2.75037V5.74901ZM14.5004 2.24998C14.9144 2.25021 15.2504 2.58592 15.2504 2.99998C15.2504 3.41406 14.9144 3.74976 14.5004 3.74998H9.00037C8.58615 3.74998 8.25037 3.4142 8.25037 2.99998C8.25038 2.58578 8.58616 2.24998 9.00037 2.24998H14.5004Z"/></svg>',
             };
             function applyIcons() {
+                applyUiIcons();
                 document.querySelectorAll(".tool[data-tool]").forEach((btn) => {
                     const icon = ICONS[btn.dataset.tool];
                     if (icon === undefined) return;
@@ -2437,11 +2808,10 @@
                     undoBtn: "undo",
                     redoBtn: "redo",
                     logoSlot: "logo",
-                    overlayBtn: "overlay",
                     presentBtn: "present",
                     exportBtn: "exportIcon",
+                    legendBtn: "legend",
                     newBoardBtn: "newBoard",
-                    clearCanvasBtn: "clearCanvas",
                     mapBtn: "sitemap",
                 };
                 Object.entries(idToIcon).forEach(([id, key]) => {
@@ -2826,9 +3196,19 @@
                 return v + DRAW_MARGIN;
             }
             let currentTool = "select";
-            let overlayMode = "off"; // 'off' | 'sprint' | 'status'
-            let currentHighlightColor = "#FCE181";
-            let currentPenColor = "#1B1A17";
+            let overlayMode = "type"; // 'type' | 'sprint' | 'status'
+            let overlayFocus = null; // { mode, key } — only this group stays emphasised
+            function pinOverlayKey(p, mode) {
+                if (mode === "type") return p.status === "done" ? "done" : p.type;
+                if (mode === "sprint") return p.sprint;
+                return p.ado
+                    ? p.ado.status
+                    : p.status === "done"
+                      ? "Done"
+                      : "No ADO link";
+            }
+            let currentHighlightColor = "#FFB41E";
+            let currentPenColor = "#333333";
             let snapEnabled = false;
             const GRID_SIZE = 26; // matches the dot-grid spacing
             function snapVal(v) {
@@ -2928,6 +3308,27 @@
                 );
                 document.getElementById("zoomlabel").textContent =
                     Math.round(zoom * 100) + "%";
+                updateDotGrid();
+            }
+            const DOT_SPACING = 26;
+            const dotGridEl = document.getElementById("dotgrid");
+            // Dots track the canvas: pan offsets them, zoom scales spacing.
+            // Spacing is doubled/halved to stay legible, as Miro/Mural do.
+            function updateDotGrid() {
+                let s = DOT_SPACING * zoom;
+                while (s < 16) s *= 2;
+                while (s > 32) s /= 2;
+                const r = Math.min(2, Math.max(1, 1.4 * Math.pow(zoom, 0.3)));
+                dotGridEl.style.backgroundSize = `${s}px ${s}px`;
+                dotGridEl.style.backgroundPosition =
+                    `${panX - s / 2}px ${panY - s / 2}px`;
+                dotGridEl.style.setProperty("--dot-r", r + "px");
+            }
+            function setZoomAnim(on) {
+                document
+                    .getElementById("canvasLayer")
+                    .classList.toggle("zoom-anim", on);
+                dotGridEl.classList.toggle("zoom-anim", on);
             }
             function screenToCanvas(clientX, clientY) {
                 const rect = document
@@ -2941,16 +3342,15 @@
 
             let lastZoomTarget = null;
             function zoomToFit(el, dataObj) {
-                const canvasLayerEl = document.getElementById("canvasLayer");
                 if (dataObj && lastZoomTarget === dataObj) {
                     lastZoomTarget = null;
-                    canvasLayerEl.classList.add("zoom-anim");
+                    setZoomAnim(true);
                     zoom = 1;
                     panX = 0;
                     panY = 0;
                     applyTransform();
                     setTimeout(
-                        () => canvasLayerEl.classList.remove("zoom-anim"),
+                        () => setZoomAnim(false),
                         460,
                     );
                     return;
@@ -2972,13 +3372,13 @@
                 );
                 const centerCanvasX = canvasX + canvasW / 2,
                     centerCanvasY = canvasY + canvasH / 2;
-                canvasLayerEl.classList.add("zoom-anim");
+                setZoomAnim(true);
                 zoom = newZoom;
                 panX = vpRect.width / 2 - centerCanvasX * zoom;
                 panY = vpRect.height / 2 - centerCanvasY * zoom;
                 applyTransform();
                 setTimeout(
-                    () => canvasLayerEl.classList.remove("zoom-anim"),
+                    () => setZoomAnim(false),
                     460,
                 );
             }
@@ -3067,15 +3467,16 @@
                 return status === "done" ? "done" : type;
             }
             const PIN_GLYPHS = {
-                bug: "!",
-                feature: "+",
-                observation: "○",
-                idea: "✦",
-                question: "?",
-                risk: "▲",
+                bug: "<svg viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M8 2.25C8.79023 2.25 9.50384 2.64347 10 3.26367C10.2405 3.56437 10.4239 3.90987 10.5488 4.27539C10.6717 4.63509 10.6423 4.98489 10.5166 5.28516C10.5763 5.33106 10.641 5.37752 10.7051 5.43066C11.014 5.68665 11.3744 6.0363 11.708 6.47852L12.5752 5.88184L12.6396 5.8418C12.973 5.65878 13.3979 5.75525 13.6182 6.0752C13.8526 6.41633 13.7658 6.8834 13.4248 7.11816L12.4395 7.79688C12.5503 8.09241 12.6366 8.40999 12.6895 8.75H14C14.4142 8.75 14.75 9.08579 14.75 9.5C14.75 9.91421 14.4142 10.25 14 10.25H12.6895C12.6366 10.5903 12.5505 10.9083 12.4395 11.2041L13.4248 11.8818L13.4863 11.9287C13.7761 12.1748 13.8384 12.6059 13.6182 12.9258C13.3833 13.2669 12.9154 13.353 12.5742 13.1182L11.708 12.5225C11.3745 12.9644 11.0138 13.3135 10.7051 13.5693C10.4749 13.7601 10.269 13.904 10.1182 14.002C10.0426 14.051 9.9799 14.0887 9.93457 14.1152C9.91204 14.1284 9.89365 14.1388 9.87988 14.1465C9.87298 14.1503 9.86683 14.1538 9.8623 14.1562C9.86017 14.1574 9.85802 14.1583 9.85645 14.1592L9.85449 14.1611H9.85352C9.85178 14.1583 9.82866 14.1162 9.5 13.5L9.85254 14.1621C9.48713 14.3567 9.03274 14.2179 8.83789 13.8525C8.64378 13.488 8.78115 13.0355 9.14453 12.8398L9.14844 12.8369C9.15355 12.8341 9.16344 12.8291 9.17676 12.8213C9.20375 12.8055 9.24686 12.7798 9.30176 12.7441C9.41189 12.6727 9.56946 12.5621 9.74805 12.4141C10.1088 12.1151 10.5347 11.6781 10.8398 11.1113C11.0828 10.6598 11.25 10.1254 11.25 9.5C11.25 8.8746 11.0828 8.34015 10.8398 7.88867C10.5347 7.32192 10.1088 6.88494 9.74805 6.58594C9.56946 6.43794 9.41189 6.32733 9.30176 6.25586C9.28612 6.24571 9.27041 6.23804 9.25684 6.22949C9.17225 6.24213 9.08652 6.25 9 6.25H7C6.91348 6.25 6.82775 6.24213 6.74316 6.22949C6.6912 6.26221 6.62269 6.30533 6.54395 6.36133C6.34033 6.50613 6.06775 6.72376 5.79688 7.0127C5.25326 7.59256 4.75 8.41841 4.75 9.5C4.75 10.5816 5.25326 11.4074 5.79688 11.9873C6.06775 12.2762 6.34033 12.4939 6.54395 12.6387C6.64521 12.7107 6.72828 12.7634 6.7832 12.7969C6.81041 12.8135 6.83066 12.8251 6.84277 12.832C6.84865 12.8354 6.85267 12.8379 6.85449 12.8389H6.85352C7.21834 13.0339 7.35656 13.4874 7.16211 13.8525C6.96726 14.2179 6.51287 14.3567 6.14746 14.1621L6.47656 13.5439C6.17036 14.1181 6.14827 14.1584 6.14648 14.1611H6.14551L6.14453 14.1602L6.13086 14.1533C6.12328 14.1491 6.11351 14.1435 6.10156 14.1367C6.07704 14.1228 6.0429 14.1031 6.00195 14.0781C5.92018 14.0283 5.80781 13.9559 5.6748 13.8613C5.40968 13.6728 5.0572 13.3904 4.70312 13.0127C4.56515 12.8655 4.42521 12.7027 4.29004 12.5234L3.4248 13.1182C3.08367 13.3526 2.6166 13.2658 2.38184 12.9248C2.16204 12.605 2.22405 12.1747 2.51367 11.9287L2.5752 11.8818L3.55957 11.2051C3.44851 10.9096 3.36151 10.5914 3.30859 10.25H2C1.58579 10.25 1.25 9.91421 1.25 9.5C1.25 9.08579 1.58579 8.75 2 8.75H3.30859C3.36146 8.40898 3.44866 8.09113 3.55957 7.7959L2.5752 7.11816L2.51367 7.07129C2.22391 6.8252 2.16162 6.39409 2.38184 6.07422C2.61675 5.73314 3.08464 5.64698 3.42578 5.88184L4.29004 6.47754C4.42536 6.29808 4.56499 6.13465 4.70312 5.9873C4.97665 5.69554 5.2493 5.46082 5.48145 5.28223C5.35684 4.98267 5.32875 4.63382 5.45117 4.27539C5.57614 3.90987 5.75945 3.56437 6 3.26367C6.49616 2.64347 7.20977 2.25 8 2.25ZM8 3.75C7.72937 3.75 7.42586 3.88369 7.17188 4.20117C7.05638 4.34555 6.95912 4.52002 6.88672 4.71777C6.89298 4.72163 6.89932 4.72758 6.9082 4.73145C6.9339 4.74256 6.96568 4.75 7 4.75H9C9.03432 4.75 9.0661 4.74256 9.0918 4.73145C9.10034 4.72773 9.10619 4.7215 9.1123 4.71777C9.03991 4.52015 8.94356 4.34548 8.82812 4.20117C8.57414 3.88369 8.27063 3.75 8 3.75Z\" fill=\"currentColor\"/></svg>",
+                feature: "<svg viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 11.866 4.13401 15 8 15ZM11 8.75C11.4142 8.75 11.75 8.41422 11.75 8C11.75 7.58579 11.4142 7.25 11 7.25L8.75 7.25L8.75 5C8.75 4.58579 8.41421 4.25 8 4.25C7.58579 4.25 7.25 4.58579 7.25 5L7.25 7.25L5 7.25C4.58578 7.25 4.25 7.58579 4.25 8C4.25 8.41422 4.58578 8.75 5 8.75L7.25 8.75L7.25 11C7.25 11.4142 7.58579 11.75 8 11.75C8.41421 11.75 8.75 11.4142 8.75 11L8.75 8.75L11 8.75Z\" fill=\"currentColor\"/></svg>",
+                observation: "<svg viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7.99988 7.25C9.51866 7.25 10.7499 8.48122 10.7499 10C10.7499 11.5188 9.51866 12.75 7.99988 12.75C6.48113 12.75 5.24988 11.5188 5.24988 10C5.24988 8.48124 6.48113 7.25004 7.99988 7.25ZM7.99988 8.75C7.30955 8.75004 6.74988 9.30967 6.74988 10C6.74988 10.6903 7.30955 11.25 7.99988 11.25C8.69023 11.25 9.24988 10.6904 9.24988 10C9.24988 9.30964 8.69023 8.75 7.99988 8.75ZM7.99988 4.25C10.199 4.25 11.8532 5.07774 12.9501 5.90039C13.4972 6.31078 13.9086 6.72182 14.1854 7.0332C14.324 7.18915 14.43 7.32137 14.5028 7.41699C14.539 7.46456 14.5676 7.50296 14.5878 7.53125C14.5978 7.54543 14.6061 7.55763 14.6122 7.56641C14.615 7.57053 14.6171 7.57429 14.619 7.57715C14.62 7.57857 14.6212 7.57997 14.6219 7.58105L14.6229 7.58301H14.6239C14.6241 7.58328 14.6237 7.5837 14.1825 7.87793L14.6239 7.58398C14.8537 7.92863 14.7605 8.39426 14.4159 8.62402C14.0716 8.8535 13.6068 8.7607 13.3768 8.41699H13.3759C13.3741 8.41443 13.3705 8.40899 13.3651 8.40137C13.354 8.3858 13.3355 8.35935 13.3094 8.3252C13.2573 8.25678 13.1755 8.15432 13.0643 8.0293C12.8412 7.77826 12.5023 7.43905 12.0497 7.09961C11.1466 6.42236 9.80052 5.75 7.99988 5.75C6.19924 5.75002 4.85318 6.42236 3.95007 7.09961C3.49748 7.43906 3.15858 7.77826 2.93542 8.0293C2.82429 8.15432 2.74244 8.25679 2.69031 8.3252C2.66428 8.35936 2.64571 8.38581 2.63464 8.40137C2.62921 8.40901 2.62565 8.41445 2.6239 8.41699H2.62195C2.39181 8.76032 1.92797 8.85343 1.58386 8.62402C1.23926 8.39426 1.14613 7.92861 1.37585 7.58398L1.81726 7.87793C1.38251 7.58802 1.37578 7.58334 1.37585 7.58301H1.37683L1.37781 7.58105C1.37854 7.57997 1.37977 7.57857 1.38074 7.57715C1.38267 7.5743 1.38474 7.57054 1.38757 7.56641C1.39361 7.55763 1.4019 7.54543 1.41199 7.53125C1.43211 7.50296 1.46071 7.46456 1.49695 7.41699C1.5698 7.32138 1.67572 7.18915 1.81433 7.0332C2.09111 6.72182 2.50255 6.31079 3.04968 5.90039C4.14655 5.07774 5.80079 4.25002 7.99988 4.25Z\" fill=\"currentColor\"/></svg>",
+                idea: "<svg viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M4.62178 11.3938C4.65552 11.396 4.67889 11.4097 4.69795 11.4377C4.71759 11.4674 4.71055 11.5476 4.69698 11.7073C4.61481 12.6742 4.90867 13.6034 5.46944 14.3908C5.56194 14.5207 5.60832 14.5859 5.60616 14.6213C5.604 14.6553 5.59035 14.6783 5.56221 14.6975C5.53272 14.7173 5.45274 14.7111 5.29268 14.6975C4.32515 14.6153 3.39614 14.9091 2.60811 15.47C2.47863 15.5621 2.41408 15.6087 2.37862 15.6067C2.34467 15.6045 2.32158 15.5908 2.30245 15.5627C2.28255 15.5333 2.28881 15.4533 2.30245 15.2932C2.38483 14.3255 2.09094 13.3968 1.52999 12.6086C1.43759 12.4788 1.39101 12.4136 1.39327 12.3782C1.39549 12.3444 1.40917 12.3211 1.43721 12.302C1.46681 12.2823 1.54698 12.2893 1.70674 12.303C2.67401 12.3853 3.60364 12.0915 4.39131 11.5305C4.52117 11.438 4.58637 11.3915 4.62178 11.3938ZM7.26045 0.489482C7.34856 0.506792 7.47568 0.660959 7.7292 0.969951C9.5185 3.15068 12.0333 4.45296 14.8064 4.88792C15.1975 4.94928 15.3933 4.97995 15.4528 5.0471C15.5091 5.11068 15.5278 5.17758 15.5114 5.26097C15.4941 5.34908 15.339 5.47616 15.03 5.72972C12.8484 7.51995 11.5491 10.0339 11.113 12.8078C11.0516 13.1982 11.0208 13.3936 10.9538 13.4533C10.8903 13.5097 10.8232 13.5282 10.7399 13.5119C10.6518 13.4946 10.5252 13.34 10.2722 13.0315C8.48184 10.8488 5.96678 9.54866 3.1921 9.11253C2.80139 9.05112 2.60614 9.02053 2.54659 8.95335C2.49023 8.88973 2.47159 8.82289 2.48799 8.73948C2.50537 8.65138 2.65992 8.52477 2.96846 8.27171C5.14995 6.48243 6.45237 3.96803 6.88741 1.19456C6.94881 0.803049 6.97943 0.606719 7.04659 0.547099C7.11014 0.490729 7.17715 0.473208 7.26045 0.489482Z\" fill=\"currentColor\"/></svg>",
+                done: "<svg viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 11.866 4.13401 15 8 15ZM12.0303 6.53033C12.3232 6.23744 12.3232 5.76256 12.0303 5.46967C11.7374 5.17678 11.2626 5.17678 10.9697 5.46967L7 9.43934L5.53033 7.96967C5.23744 7.67678 4.76256 7.67678 4.46967 7.96967C4.17678 8.26256 4.17678 8.73744 4.46967 9.03033L6.46967 11.0303C6.76256 11.3232 7.23744 11.3232 7.53033 11.0303L12.0303 6.53033Z\" fill=\"currentColor\"/></svg>",
+                question: "<svg viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1C11.866 1 15 4.13401 15 8ZM8.75 12.25C8.75 12.6642 8.41421 13 8 13C7.58579 13 7.25 12.6642 7.25 12.25C7.25 11.8358 7.58579 11.5 8 11.5C8.41421 11.5 8.75 11.8358 8.75 12.25ZM9.36472 3.91603C8.50973 3.42746 7.45209 3.46389 6.63274 4.01012L6.08397 4.37596C5.73933 4.60573 5.6462 5.07138 5.87596 5.41603C6.10573 5.76067 6.57138 5.8538 6.91603 5.62404L7.46479 5.2582C7.8114 5.02712 8.25882 5.01171 8.62051 5.21839C9.31697 5.61637 9.36684 6.60201 8.7141 7.06825L7.56407 7.8897C7.36697 8.03048 7.25 8.25779 7.25 8.5V9.5C7.25 9.91421 7.58579 10.25 8 10.25C8.41421 10.25 8.75 9.91421 8.75 9.5V8.88596L9.58596 8.28885C11.129 7.18671 11.0111 4.8568 9.36472 3.91603Z\" fill=\"currentColor\"/></svg>",
+                risk: "<svg viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M1 8C1 4.13401 4.13401 0.999999 8 0.999999C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8ZM7.25 10.75C7.25 10.3358 7.58579 10 8 10C8.41421 10 8.75 10.3358 8.75 10.75C8.75 11.1642 8.41421 11.5 8 11.5C7.58579 11.5 7.25 11.1642 7.25 10.75ZM7.25 8C7.25 8.41421 7.58579 8.75 8 8.75C8.41421 8.75 8.75 8.41421 8.75 8L8.75 5C8.75 4.58579 8.41421 4.25 8 4.25C7.58579 4.25 7.25 4.58579 7.25 5L7.25 8Z\" fill=\"currentColor\"/></svg>",
             };
             function pinGlyph(p) {
-                return p.status === "done" ? "✓" : PIN_GLYPHS[p.type] || "•";
+                return p.status === "done" ? PIN_GLYPHS.done : PIN_GLYPHS[p.type] || "•";
             }
 
             function getRectForRef(cv, ref) {
@@ -3307,6 +3708,8 @@
 
             let lastRenderedPathKey = null;
             function render() {
+                if (document.body.classList.contains("map-open"))
+                    buildSitemap();
                 const pathKey = path.join("/");
                 if (pathKey !== lastRenderedPathKey) {
                     selectedDrawing = null;
@@ -3374,7 +3777,7 @@
                     if (idx < path.length - 1) {
                         const sep = document.createElement("span");
                         sep.className = "sep";
-                        sep.textContent = "/";
+                        sep.innerHTML = uiIcon("key-right");
                         breadcrumbEl.appendChild(sep);
                     }
                 });
@@ -3407,12 +3810,12 @@
                     fb.style.top = f.y + "px";
                     if (f.collapsed) {
                         fb.className = "frame-box collapsed";
-                        fb.innerHTML = `<div class="frame-collapsed-card"><span class="ft" contenteditable="false" title="Double-click to rename">${f.label}</span><span class="fc" title="Expand">▸</span></div>`;
+                        fb.innerHTML = `<div class="frame-collapsed-card"><span class="ft" contenteditable="false" title="Double-click to rename">${f.label}</span><span class="fc" title="Expand">${uiIcon("key-right")}</span></div>`;
                     } else {
                         fb.className = "frame-box";
                         fb.style.width = f.w + "px";
                         fb.style.height = f.h + "px";
-                        fb.innerHTML = `<div class="frame-label"><span class="ft" contenteditable="false" title="Double-click to rename">${f.label}</span><span class="fc" title="Collapse">▾</span></div>`;
+                        fb.innerHTML = `<div class="frame-label"><span class="ft" contenteditable="false" title="Double-click to rename">${f.label}</span><span class="fc" title="Collapse">${uiIcon("key-down")}</span></div>`;
                     }
                     const ft = fb.querySelector(".ft");
                     ft.addEventListener("pointerdown", (ev) =>
@@ -3471,12 +3874,12 @@
               ? `<span class="badge-live badge-edit"><span class="dot"></span>LIVE · ${n.version}</span>`
               : `<span class="badge-static badge-edit">FROZEN · ${n.version}</span>`
       }
-        <button class="node-upload" title="Set jump screen image">⤓</button>
-        <button class="node-delete" title="Delete screen">✕</button>
-        ${n.versions && n.versions.length > 1 ? `<button class="node-diff" title="Compare versions">⇄</button>` : ""}
+        <button class="node-upload" title="Set jump screen image"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.7998 1.25C11.3475 1.25 11.8037 1.24898 12.1748 1.2793C12.5545 1.31033 12.9109 1.3781 13.2481 1.54981C13.7655 1.81346 14.1865 2.23452 14.4502 2.75196C14.6219 3.0891 14.6897 3.44547 14.7207 3.8252C14.751 4.19633 14.75 4.65253 14.75 5.2002V10.7998C14.75 11.3475 14.751 11.8037 14.7207 12.1748C14.6897 12.5545 14.6219 12.9109 14.4502 13.2481C14.1865 13.7655 13.7655 14.1865 13.2481 14.4502C12.9109 14.6219 12.5545 14.6897 12.1748 14.7207C11.8037 14.751 11.3475 14.75 10.7998 14.75H5.2002C4.65253 14.75 4.19633 14.751 3.8252 14.7207C3.44547 14.6897 3.0891 14.6219 2.75196 14.4502C2.23452 14.1865 1.81346 13.7655 1.54981 13.2481C1.3781 12.9109 1.31033 12.5545 1.2793 12.1748C1.24898 11.8037 1.25 11.3475 1.25 10.7998V5.2002C1.25 4.65253 1.24898 4.19633 1.2793 3.8252C1.31033 3.44547 1.3781 3.0891 1.54981 2.75196C1.81346 2.23451 2.23451 1.81346 2.75196 1.54981C3.0891 1.3781 3.44547 1.31033 3.8252 1.2793C4.19633 1.24898 4.65253 1.25 5.2002 1.25H10.7998ZM5.2002 2.75C4.62778 2.75 4.24315 2.75024 3.94727 2.77442C3.66028 2.79788 3.52316 2.84059 3.43262 2.88672C3.19751 3.00655 3.00655 3.19751 2.88672 3.43262C2.84059 3.52316 2.79788 3.66028 2.77442 3.94727C2.75024 4.24315 2.75 4.62778 2.75 5.2002V10.7998C2.75 11.3722 2.75024 11.7569 2.77442 12.0527C2.79788 12.3397 2.84059 12.4768 2.88672 12.5674C3.00655 12.8025 3.19751 12.9935 3.43262 13.1133C3.52316 13.1594 3.66028 13.2021 3.94727 13.2256C4.24315 13.2498 4.62778 13.25 5.2002 13.25H10.7998C11.3722 13.25 11.7569 13.2498 12.0527 13.2256C12.3397 13.2021 12.4768 13.1594 12.5674 13.1133C12.8025 12.9935 12.9935 12.8025 13.1133 12.5674C13.1594 12.4768 13.2021 12.3397 13.2256 12.0527C13.2498 11.7569 13.25 11.3722 13.25 10.7998V5.2002C13.25 4.62778 13.2498 4.24315 13.2256 3.94727C13.2021 3.66028 13.1594 3.52316 13.1133 3.43262C12.9935 3.19751 12.8025 3.00655 12.5674 2.88672C12.4768 2.84059 12.3397 2.79788 12.0527 2.77442C11.7569 2.75024 11.3722 2.75 10.7998 2.75H5.2002ZM6.97461 8.58106C7.42619 8.4461 7.90782 8.44603 8.35938 8.58106C8.65661 8.67003 8.90584 8.82421 9.14258 9.00391C9.37187 9.17799 9.63201 9.40999 9.93653 9.68067L11.165 10.7725C11.4744 11.0476 11.5025 11.5225 11.2275 11.832C10.9524 12.1413 10.4785 12.1685 10.1689 11.8936L8.94043 10.8018C8.61852 10.5156 8.40773 10.3301 8.23536 10.1992C8.07072 10.0742 7.98597 10.0355 7.92969 10.0186C7.75842 9.96733 7.57559 9.96739 7.4043 10.0186C7.34805 10.0354 7.26344 10.0741 7.09864 10.1992C6.92626 10.3301 6.7155 10.5156 6.39356 10.8018L5.16504 11.8936C4.85559 12.1686 4.38169 12.1412 4.10645 11.832C3.83126 11.5224 3.85936 11.0477 4.16895 10.7725L5.39747 9.68067C5.70199 9.40998 5.96212 9.17797 6.19141 9.00391C6.42817 8.82422 6.67733 8.66998 6.97461 8.58106ZM10 3.75C10.4141 3.7502 10.75 4.08591 10.75 4.5V5.25H11.5C11.9141 5.2502 12.25 5.58591 12.25 6C12.25 6.4141 11.9141 6.74981 11.5 6.75H10.75V7.5C10.75 7.9141 10.4141 8.24981 10 8.25C9.58596 8.24981 9.25 7.9141 9.25 7.5V6.75H8.5C8.08596 6.74981 7.75 6.4141 7.75 6C7.75001 5.58591 8.08596 5.2502 8.5 5.25H9.25V4.5C9.25001 4.08591 9.58596 3.7502 10 3.75Z" fill="currentColor"/></svg></button>
+        <button class="node-delete" title="Delete screen"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.1874 4.74985C10.4873 4.74985 10.7599 4.74924 10.9843 4.7684C11.2162 4.78823 11.4728 4.83398 11.7196 4.97152C12.0682 5.16595 12.3405 5.47356 12.4901 5.8436C12.596 6.10552 12.6086 6.3659 12.5995 6.59848C12.5907 6.82342 12.5566 7.09385 12.5194 7.39145L11.9198 12.1913C11.8902 12.4278 11.8633 12.6476 11.826 12.8299C11.787 13.0214 11.726 13.2271 11.6014 13.4266C11.4215 13.7148 11.1616 13.9448 10.8534 14.0877C10.64 14.1866 10.4281 14.2211 10.2333 14.2362C10.0478 14.2505 9.82614 14.2498 9.58777 14.2498H6.41199C6.17385 14.2498 5.95282 14.2505 5.76746 14.2362C5.57268 14.2211 5.36076 14.1866 5.14734 14.0877C4.839 13.9448 4.57834 13.7148 4.39832 13.4266C4.27381 13.2271 4.21376 13.0213 4.17468 12.8299C4.13746 12.6476 4.11051 12.4278 4.08093 12.1913L3.48035 7.39145C3.44314 7.09384 3.40908 6.82343 3.40027 6.59848C3.39119 6.3659 3.40473 6.10552 3.51062 5.8436C3.66029 5.47371 3.93168 5.16591 4.28015 4.97152C4.52694 4.83395 4.78358 4.78824 5.0155 4.7684C5.23984 4.74922 5.51238 4.74985 5.81238 4.74985H10.1874ZM5.81238 6.24985C5.48629 6.24985 5.28897 6.25011 5.14343 6.26254C5.00567 6.27433 4.99096 6.29203 5.01062 6.2811C4.9609 6.30884 4.92264 6.35334 4.90125 6.4061C4.90952 6.38545 4.89392 6.4021 4.89929 6.53988C4.90501 6.68577 4.92821 6.88159 4.96863 7.20492L5.56921 12.0057C5.60162 12.2649 5.62146 12.4177 5.64441 12.5301C5.66532 12.6324 5.67831 12.6449 5.67078 12.6327C5.69638 12.6735 5.73351 12.706 5.77722 12.7264C5.76465 12.7207 5.7791 12.7321 5.88269 12.7401C5.99708 12.7489 6.15074 12.7498 6.41199 12.7498H9.58777C9.84898 12.7498 10.0027 12.7489 10.1171 12.7401C10.1821 12.7351 10.2124 12.7291 10.2225 12.7264C10.2663 12.706 10.3033 12.6736 10.329 12.6327C10.333 12.6231 10.3432 12.5942 10.3563 12.5301C10.3793 12.4177 10.3981 12.2649 10.4305 12.0057L11.0311 7.20492C11.0715 6.88155 11.0957 6.68578 11.1014 6.53988C11.1068 6.40228 11.0903 6.38558 11.0985 6.4061C11.0771 6.35334 11.0389 6.30882 10.9891 6.2811C11.0089 6.29213 10.9943 6.27434 10.8563 6.26254C10.7108 6.25013 10.5133 6.24985 10.1874 6.24985H5.81238ZM6.99988 7.24985C7.41405 7.24985 7.74981 7.58569 7.74988 7.99985V10.9998C7.74988 11.4141 7.41409 11.7498 6.99988 11.7498C6.58569 11.7498 6.24988 11.414 6.24988 10.9998V7.99985C6.24995 7.58571 6.58573 7.24987 6.99988 7.24985ZM8.99988 7.24985C9.41405 7.24985 9.74981 7.58569 9.74988 7.99985V10.9998C9.74988 11.4141 9.41409 11.7498 8.99988 11.7498C8.58569 11.7498 8.24988 11.414 8.24988 10.9998V7.99985C8.24995 7.58571 8.58573 7.24987 8.99988 7.24985ZM7.02917 1.74594C7.61694 1.35411 8.38278 1.35417 8.97058 1.74594L9.66394 2.20785C9.70496 2.2352 9.75331 2.24981 9.80261 2.24984H11.9999C12.4141 2.24984 12.7498 2.58569 12.7499 2.99984C12.7499 3.41406 12.4141 3.74985 11.9999 3.74985H9.80261C9.45718 3.74981 9.11933 3.64751 8.83191 3.4559L8.13855 2.99399C8.0546 2.9381 7.94513 2.93804 7.86121 2.99399L7.16785 3.4559C6.8804 3.64752 6.54261 3.74984 6.19714 3.74985H3.99988C3.58572 3.74978 3.24988 3.41402 3.24988 2.99984C3.24994 2.58573 3.58576 2.24991 3.99988 2.24984H6.19714C6.24648 2.24984 6.29476 2.23521 6.33582 2.20785L7.02917 1.74594Z" fill="currentColor"/></svg></button>
+        ${n.versions && n.versions.length > 1 ? `<button class="node-diff" title="Compare versions">${uiIcon("switch")}</button>` : ""}
       </div>
       <div class="node-thumb">${n.thumb ? `<img src="${n.thumb}" alt="${n.label}" draggable="false">` : fakeThumb()}</div>
-      <div class="node-foot"><span class="node-label" title="Double-click to rename">${n.label}</span><span class="dive-hint">dive in ⤵</span></div>`;
+      <div class="node-foot"><span class="node-label" title="Double-click to rename">${n.label}</span><span class="dive-hint">dive in <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#fi-dive-clip)"><path d="M8 0.75C8.41421 0.75 8.75 1.08579 8.75 1.5V2.2998C11.3257 2.63539 13.3646 4.67434 13.7002 7.25H14.5C14.9142 7.25 15.25 7.58579 15.25 8C15.25 8.41421 14.9142 8.75 14.5 8.75H13.7002C13.3646 11.3256 11.3256 13.3636 8.75 13.6992V14.5C8.75 14.9142 8.41421 15.25 8 15.25C7.58579 15.25 7.25 14.9142 7.25 14.5V13.6992C4.6744 13.3636 2.63539 11.3256 2.2998 8.75H1.5C1.08579 8.75 0.75 8.41421 0.75 8C0.75 7.58579 1.08579 7.25 1.5 7.25H2.2998C2.63539 4.67434 4.67434 2.63539 7.25 2.2998V1.5C7.25 1.08579 7.58579 0.75 8 0.75ZM8.75 4.5C8.75 4.91421 8.41421 5.25 8 5.25C7.58579 5.25 7.25 4.91421 7.25 4.5V3.81641C5.50407 4.1273 4.12835 5.50409 3.81738 7.25H4.5C4.91421 7.25 5.25 7.58579 5.25 8C5.25 8.41421 4.91421 8.75 4.5 8.75H3.81738C4.12834 10.4959 5.50415 11.8717 7.25 12.1826V11.5C7.25 11.0858 7.58579 10.75 8 10.75C8.41421 10.75 8.75 11.0858 8.75 11.5V12.1826C10.4959 11.8717 11.8717 10.4959 12.1826 8.75H11.5C11.0858 8.75 10.75 8.41421 10.75 8C10.75 7.58579 11.0858 7.25 11.5 7.25H12.1826C11.8717 5.50409 10.4959 4.1273 8.75 3.81641V4.5ZM8 6.25C8.9665 6.25 9.75 7.0335 9.75 8C9.75 8.9665 8.9665 9.75 8 9.75C7.0335 9.75 6.25 8.9665 6.25 8C6.25 7.0335 7.0335 6.25 8 6.25ZM8 7.75C7.86193 7.75 7.75 7.86193 7.75 8C7.75 8.13807 7.86193 8.25 8 8.25C8.13807 8.25 8.25 8.13807 8.25 8C8.25 7.86193 8.13807 7.75 8 7.75Z" fill="currentColor"/></g><defs><clipPath id="fi-dive-clip"><rect width="16" height="16" fill="white"/></clipPath></defs></svg></span></div>`;
                     attachDragSelect(el, n);
                     attachConnectorAnchors(el, n);
                     domByObj.set(n, el);
@@ -3579,6 +3982,7 @@
                         del.className = "asset-delete";
                         del.title = "Delete text";
                         del.setAttribute("aria-hidden", "true");
+                        del.innerHTML = uiIcon("cancel");
                         del.addEventListener("pointerdown", (e) =>
                             e.stopPropagation(),
                         );
@@ -3600,7 +4004,7 @@
                         el.style.top = a.y + "px";
                         el.style.width = (a.w || 200) + "px";
                         el.style.height = (a.h || 150) + "px";
-                        el.innerHTML = `<div class="img-body">${a.thumb ? `<img src="${a.thumb}" alt="${a.label}" draggable="false">` : '<span class="img-empty">no image</span>'}</div><div class="img-foot"><span class="asset-label" title="Double-click to rename">${a.label || "Untitled asset"}</span><button class="img-upload" title="Upload image">⤓</button></div>`;
+                        el.innerHTML = `<div class="img-body">${a.thumb ? `<img src="${a.thumb}" alt="${a.label}" draggable="false">` : '<span class="img-empty">no image</span>'}</div><div class="img-foot"><span class="asset-label" title="Double-click to rename">${a.label || "Untitled asset"}</span><button class="img-upload" title="Upload image"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.25391 8.92285C2.29253 8.54488 2.61183 8.25 3 8.25C3.41421 8.25 3.75 8.58579 3.75 9L3.75 12C3.75 12.1381 3.86193 12.25 4 12.25L12 12.25C12.1381 12.25 12.25 12.1381 12.25 12L12.25 9C12.25 8.58579 12.5858 8.25 13 8.25C13.4142 8.25 13.75 8.58579 13.75 9L13.75 12C13.75 12.9665 12.9665 13.75 12 13.75L4 13.75C3.0335 13.75 2.25 12.9665 2.25 12L2.25 9L2.25391 8.92285ZM4.46973 6.53027C4.17683 6.23738 4.17683 5.76262 4.46973 5.46973L7.46973 2.46973L7.58398 2.37598C7.70628 2.29445 7.85085 2.25 8 2.25C8.19891 2.25 8.38962 2.32908 8.53027 2.46973L11.5303 5.46973L11.582 5.52637C11.8223 5.82095 11.8049 6.25567 11.5303 6.53027C11.2557 6.80488 10.8209 6.82234 10.5264 6.58203L10.4697 6.53027L8.75 4.81055L8.75 10C8.75 10.4142 8.41421 10.75 8 10.75C7.58579 10.75 7.25 10.4142 7.25 10L7.25 4.81055L5.53027 6.53027C5.23738 6.82317 4.76262 6.82316 4.46973 6.53027Z" fill="currentColor"/></svg></button></div>`;
                         const uploadBtn = el.querySelector(".img-upload");
                         uploadBtn.addEventListener("pointerdown", (e) =>
                             e.stopPropagation(),
@@ -3638,7 +4042,7 @@
                         el.className = "asset-card link-card";
                         el.style.left = a.x + "px";
                         el.style.top = a.y + "px";
-                        el.innerHTML = `<div class="lk-row">↗ link</div><span class="lk-title asset-label" title="Double-click to rename">${a.label}</span><div class="lk-url" title="Double-click to open">${a.url}</div>`;
+                        el.innerHTML = `<div class="lk-row">${uiIcon("link")}link</div><span class="lk-title asset-label" title="Double-click to rename">${a.label}</span><div class="lk-url" title="Double-click to open">${a.url}</div>`;
                         const lkLabelEl = el.querySelector(".lk-title");
                         lkLabelEl.addEventListener("pointerdown", (e) =>
                             e.stopPropagation(),
@@ -3678,8 +4082,10 @@
                     }
                 });
 
+                const visiblePins = [];
                 cv.pins.forEach((p) => {
                     if (hiddenRefs.has(p)) return;
+                    visiblePins.push(p);
                     const group = document.createElement("div");
                     group.className = "pin-group";
                     group.style.left = p.x + "px";
@@ -3689,19 +4095,18 @@
                         "pin " +
                         pinColor(p.type, p.status) +
                         (multiSelected.has(p) ? " multi-selected" : "");
-                    el.textContent = pinGlyph(p);
+                    el.innerHTML = pinGlyph(p);
                     el.title = p.note;
-                    if (overlayMode === "sprint") {
-                        el.style.background = overlayColor(p.sprint);
-                    } else if (overlayMode === "status") {
+                    if (overlayMode !== "type") {
                         el.style.background = overlayColor(
-                            p.ado
-                                ? p.ado.status
-                                : p.status === "done"
-                                  ? "Done"
-                                  : "No ADO link",
+                            pinOverlayKey(p, overlayMode),
                         );
                     }
+                    if (
+                        overlayFocus &&
+                        pinOverlayKey(p, overlayFocus.mode) !== overlayFocus.key
+                    )
+                        group.classList.add("pin-dim");
                     attachPinDrag(el, p);
                     domByObj.set(p, el);
                     group.appendChild(el);
@@ -3717,6 +4122,7 @@
                     group.appendChild(chip);
                     nodesLayer.appendChild(group);
                 });
+                renderOverlayLegend(visiblePins);
 
                 function ptInCollapsedFrame(pt) {
                     return collapsedFrameRects.some(
@@ -3772,7 +4178,7 @@
                         );
                         visible.setAttribute("d", d);
                         if (dr.type === "highlight")
-                            visible.style.stroke = dr.color || "#FCE181";
+                            visible.style.stroke = dr.color || "#FFB41E";
                         if (dr.type === "pen" && dr.color)
                             visible.style.stroke = dr.color;
                         drawlayer.appendChild(visible);
@@ -3786,9 +4192,7 @@
                         hit.setAttribute("stroke", "transparent");
                         hit.setAttribute("stroke-width", "16");
                         hit.style.cursor = "pointer";
-                        hit.addEventListener("pointerdown", (e) =>
-                            e.stopPropagation(),
-                        );
+                        attachDrawingDrag(hit, dr, cv);
                         hit.addEventListener("click", (e) => {
                             e.stopPropagation();
                             selectedDrawing = dr;
@@ -3853,9 +4257,7 @@
                         hit.setAttribute("stroke", "transparent");
                         hit.setAttribute("stroke-width", "14");
                         hit.style.cursor = "pointer";
-                        hit.addEventListener("pointerdown", (e) =>
-                            e.stopPropagation(),
-                        );
+                        attachDrawingDrag(hit, dr, cv);
                         hit.addEventListener("click", (e) => {
                             e.stopPropagation();
                             selectedDrawing = dr;
@@ -4093,7 +4495,7 @@
                         } else {
                             const ratio = img.naturalHeight / img.naturalWidth;
                             const longSide = 220,
-                                pad = 0.86;
+                                pad = 1;
                             let dispW, dispH;
                             if (ratio <= 1) {
                                 dispW = longSide;
@@ -4201,6 +4603,77 @@
                 selectedData = dataObj || null;
                 el.classList.add("selected");
             }
+            // Drag a pen / highlight / arrow stroke to move it.
+            function attachDrawingDrag(hit, dr, cv) {
+                hit.addEventListener("pointerdown", (e) => {
+                    if (["pen", "highlight", "arrow"].includes(currentTool))
+                        return; // those tools draw on top instead
+                    if (e.shiftKey && currentTool === "select") return; // shift-drag → box select
+                    e.stopPropagation();
+                    hit.setPointerCapture && hit.setPointerCapture(e.pointerId);
+                    const startX = e.clientX,
+                        startY = e.clientY;
+                    const preSnap = JSON.stringify(tree);
+                    const related = drawlayer.querySelectorAll(
+                        `[data-drid="${dr.id}"]`,
+                    );
+                    const handles = nodesLayer.querySelectorAll(
+                        `.arrow-handle[data-drid="${dr.id}"]`,
+                    );
+                    const origPoints =
+                        dr.type === "arrow"
+                            ? null
+                            : dr.points.map((p) => ({ x: p.x, y: p.y }));
+                    const orig =
+                        dr.type === "arrow"
+                            ? resolveArrowEndpoints(dr, cv)
+                            : null;
+                    let moved = false,
+                        dx = 0,
+                        dy = 0;
+                    const onMove = (ev) => {
+                        dx = (ev.clientX - startX) / zoom;
+                        dy = (ev.clientY - startY) / zoom;
+                        if (!moved && Math.abs(dx) < 3 && Math.abs(dy) < 3)
+                            return;
+                        moved = true;
+                        related.forEach((el) =>
+                            el.setAttribute("transform", `translate(${dx} ${dy})`),
+                        );
+                        handles.forEach(
+                            (h) =>
+                                (h.style.transform = `translate(${dx}px,${dy}px)`),
+                        );
+                    };
+                    const onUp = () => {
+                        hit.removeEventListener("pointermove", onMove);
+                        hit.removeEventListener("pointerup", onUp);
+                        hit.removeEventListener("pointercancel", onUp);
+                        if (!moved) return; // plain click: the click handler selects it
+                        if (origPoints) {
+                            dr.points = origPoints.map((p) => ({
+                                x: p.x + dx,
+                                y: p.y + dy,
+                            }));
+                        } else {
+                            dr.x1 = orig.p1.x + dx;
+                            dr.y1 = orig.p1.y + dy;
+                            dr.x2 = orig.p2.x + dx;
+                            dr.y2 = orig.p2.y + dy;
+                            dr.startRef = null;
+                            dr.endRef = null;
+                        }
+                        commitUndo(preSnap);
+                        selectedDrawing = dr;
+                        selectedDrawingCv = cv;
+                        render();
+                    };
+                    hit.addEventListener("pointermove", onMove);
+                    hit.addEventListener("pointerup", onUp);
+                    hit.addEventListener("pointercancel", onUp);
+                });
+            }
+
             function attachArrowHandleDrag(h, dr, which) {
                 h.addEventListener("pointerdown", (e) => {
                     e.stopPropagation();
@@ -4411,20 +4884,79 @@
                         }
                     }
                 });
-            function renderThread(p) {
+            const PCC_EDIT_ICON = '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.3455 5.26841C12.2313 5.23131 12.1323 5.13231 11.9343 4.9343L11.0657 4.06567C10.8677 3.86766 10.7687 3.76866 10.7316 3.65449C10.6989 3.55407 10.6989 3.4459 10.7316 3.34548C10.7687 3.23131 10.8677 3.13231 11.0657 2.9343L11.4343 2.56567L11.4343 2.56566C11.6323 2.36766 11.7313 2.26866 11.8455 2.23156C11.9459 2.19894 12.0541 2.19894 12.1545 2.23156C12.2687 2.26866 12.3677 2.36766 12.5657 2.56567L13.4343 3.4343C13.6323 3.63231 13.7313 3.73131 13.7684 3.84548C13.8011 3.9459 13.8011 4.05407 13.7684 4.15449C13.7313 4.26866 13.6323 4.36766 13.4343 4.56567L13.0657 4.9343C12.8677 5.13231 12.7687 5.23131 12.6545 5.26841C12.5541 5.30104 12.4459 5.30104 12.3455 5.26841ZM3.90962 13.9862C3.85207 14 3.79092 14 3.66863 14H2.8C2.51997 14 2.37996 14 2.273 13.9455C2.17892 13.8976 2.10243 13.8211 2.0545 13.727C2 13.62 2 13.48 2 13.2V12.3314C2 12.2091 2 12.1479 2.01382 12.0904C2.02606 12.0394 2.04627 11.9906 2.07368 11.9458C2.1046 11.8954 2.14784 11.8521 2.23431 11.7657L2.23431 11.7657L8.93431 5.06567C9.13232 4.86766 9.23133 4.76866 9.34549 4.73156C9.44591 4.69894 9.55409 4.69894 9.65451 4.73156C9.76867 4.76866 9.86768 4.86766 10.0657 5.06567L10.9343 5.9343C11.1323 6.13231 11.2313 6.23131 11.2684 6.34548C11.3011 6.4459 11.3011 6.55407 11.2684 6.65449C11.2313 6.76866 11.1323 6.86766 10.9343 7.06567L4.23432 13.7657L4.2343 13.7657C4.14783 13.8522 4.1046 13.8954 4.05414 13.9263C4.00941 13.9537 3.96063 13.9739 3.90962 13.9862Z" fill="currentColor"/></svg>';
+            const PCC_DEL_ICON = '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.1874 4.74985C10.4873 4.74985 10.7599 4.74924 10.9843 4.7684C11.2162 4.78823 11.4728 4.83398 11.7196 4.97152C12.0682 5.16595 12.3405 5.47356 12.4901 5.8436C12.596 6.10552 12.6086 6.3659 12.5995 6.59848C12.5907 6.82342 12.5566 7.09385 12.5194 7.39145L11.9198 12.1913C11.8902 12.4278 11.8633 12.6476 11.826 12.8299C11.787 13.0214 11.726 13.2271 11.6014 13.4266C11.4215 13.7148 11.1616 13.9448 10.8534 14.0877C10.64 14.1866 10.4281 14.2211 10.2333 14.2362C10.0478 14.2505 9.82614 14.2498 9.58777 14.2498H6.41199C6.17385 14.2498 5.95282 14.2505 5.76746 14.2362C5.57268 14.2211 5.36076 14.1866 5.14734 14.0877C4.839 13.9448 4.57834 13.7148 4.39832 13.4266C4.27381 13.2271 4.21376 13.0213 4.17468 12.8299C4.13746 12.6476 4.11051 12.4278 4.08093 12.1913L3.48035 7.39145C3.44314 7.09384 3.40908 6.82343 3.40027 6.59848C3.39119 6.3659 3.40473 6.10552 3.51062 5.8436C3.66029 5.47371 3.93168 5.16591 4.28015 4.97152C4.52694 4.83395 4.78358 4.78824 5.0155 4.7684C5.23984 4.74922 5.51238 4.74985 5.81238 4.74985H10.1874ZM5.81238 6.24985C5.48629 6.24985 5.28897 6.25011 5.14343 6.26254C5.00567 6.27433 4.99096 6.29203 5.01062 6.2811C4.9609 6.30884 4.92264 6.35334 4.90125 6.4061C4.90952 6.38545 4.89392 6.4021 4.89929 6.53988C4.90501 6.68577 4.92821 6.88159 4.96863 7.20492L5.56921 12.0057C5.60162 12.2649 5.62146 12.4177 5.64441 12.5301C5.66532 12.6324 5.67831 12.6449 5.67078 12.6327C5.69638 12.6735 5.73351 12.706 5.77722 12.7264C5.76465 12.7207 5.7791 12.7321 5.88269 12.7401C5.99708 12.7489 6.15074 12.7498 6.41199 12.7498H9.58777C9.84898 12.7498 10.0027 12.7489 10.1171 12.7401C10.1821 12.7351 10.2124 12.7291 10.2225 12.7264C10.2663 12.706 10.3033 12.6736 10.329 12.6327C10.333 12.6231 10.3432 12.5942 10.3563 12.5301C10.3793 12.4177 10.3981 12.2649 10.4305 12.0057L11.0311 7.20492C11.0715 6.88155 11.0957 6.68578 11.1014 6.53988C11.1068 6.40228 11.0903 6.38558 11.0985 6.4061C11.0771 6.35334 11.0389 6.30882 10.9891 6.2811C11.0089 6.29213 10.9943 6.27434 10.8563 6.26254C10.7108 6.25013 10.5133 6.24985 10.1874 6.24985H5.81238ZM6.99988 7.24985C7.41405 7.24985 7.74981 7.58569 7.74988 7.99985V10.9998C7.74988 11.4141 7.41409 11.7498 6.99988 11.7498C6.58569 11.7498 6.24988 11.414 6.24988 10.9998V7.99985C6.24995 7.58571 6.58573 7.24987 6.99988 7.24985ZM8.99988 7.24985C9.41405 7.24985 9.74981 7.58569 9.74988 7.99985V10.9998C9.74988 11.4141 9.41409 11.7498 8.99988 11.7498C8.58569 11.7498 8.24988 11.414 8.24988 10.9998V7.99985C8.24995 7.58571 8.58573 7.24987 8.99988 7.24985ZM7.02917 1.74594C7.61694 1.35411 8.38278 1.35417 8.97058 1.74594L9.66394 2.20785C9.70496 2.2352 9.75331 2.24981 9.80261 2.24984H11.9999C12.4141 2.24984 12.7498 2.58569 12.7499 2.99984C12.7499 3.41406 12.4141 3.74985 11.9999 3.74985H9.80261C9.45718 3.74981 9.11933 3.64751 8.83191 3.4559L8.13855 2.99399C8.0546 2.9381 7.94513 2.93804 7.86121 2.99399L7.16785 3.4559C6.8804 3.64752 6.54261 3.74984 6.19714 3.74985H3.99988C3.58572 3.74978 3.24988 3.41402 3.24988 2.99984C3.24994 2.58573 3.58576 2.24991 3.99988 2.24984H6.19714C6.24648 2.24984 6.29476 2.23521 6.33582 2.20785L7.02917 1.74594Z" fill="currentColor"/></svg>';
+            function renderThread(p, keepScroll) {
                 const threadEl = document.getElementById("pcThread");
+                const prevScroll = threadEl.scrollTop;
                 if (!p || !p.comments || !p.comments.length) {
                     threadEl.innerHTML = "";
                     return;
                 }
                 threadEl.innerHTML = p.comments
                     .map(
-                        (c) =>
-                            `<div class="pc-comment"><div class="pcc-meta">${c.author} · ${c.time}</div>${c.text}</div>`,
+                        (c, i) =>
+                            `<div class="pc-comment" data-ci="${i}"><div class="pcc-actions"><button type="button" class="pcc-edit-btn" title="Edit comment">${PCC_EDIT_ICON}</button><button type="button" class="pcc-del pcc-del-btn" title="Delete comment">${PCC_DEL_ICON}</button></div><div class="pcc-meta">${escHtml(c.author)} · ${escHtml(c.time)}</div><div class="pcc-text">${escHtml(c.text)}</div></div>`,
                     )
                     .join("");
-                threadEl.scrollTop = threadEl.scrollHeight;
+                threadEl.scrollTop = keepScroll
+                    ? prevScroll
+                    : threadEl.scrollHeight;
             }
+            // Pin note mirrors the newest comment (used by search, chip and tooltips)
+            function syncPinNote(p) {
+                const last = p.comments && p.comments[p.comments.length - 1];
+                p.note = last ? last.text : "Untitled " + p.type;
+            }
+            function startEditComment(p, idx, row) {
+                const c = p.comments[idx];
+                const body = row.querySelector(".pcc-text");
+                row.querySelector(".pcc-actions").style.display = "none";
+                body.innerHTML = `<textarea class="pcc-edit"></textarea><div class="pcc-edit-row"><button type="button" class="pcc-cancel">Cancel</button><button type="button" class="pcc-save">Save</button></div>`;
+                body.style.paddingRight = "0";
+                const ta = body.querySelector("textarea");
+                ta.value = c.text;
+                ta.focus();
+                const commit = () => {
+                    const text = ta.value.trim();
+                    if (!text) return;
+                    if (text !== c.text) {
+                        pushUndo();
+                        c.text = text;
+                        syncPinNote(p);
+                        render();
+                    }
+                    renderThread(p, true);
+                };
+                body.querySelector(".pcc-save").onclick = commit;
+                body.querySelector(".pcc-cancel").onclick = () =>
+                    renderThread(p, true);
+                ta.addEventListener("keydown", (e) => {
+                    if (e.key === "Escape") {
+                        e.stopPropagation();
+                        renderThread(p, true);
+                    } else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        commit();
+                    }
+                });
+            }
+            document.getElementById("pcThread").addEventListener("click", (e) => {
+                if (!pendingPin || !pendingPin.existing) return;
+                const p = pendingPin.existing;
+                const row = e.target.closest(".pc-comment");
+                if (!row || !p.comments) return;
+                const idx = +row.dataset.ci;
+                if (e.target.closest(".pcc-edit-btn")) {
+                    startEditComment(p, idx, row);
+                } else if (e.target.closest(".pcc-del-btn")) {
+                    pushUndo();
+                    p.comments.splice(idx, 1);
+                    syncPinNote(p);
+                    renderThread(p, true);
+                    render();
+                }
+            });
             function refreshAdoBlock(ado) {
                 const adoBlock = document.getElementById("pcAdoBlock");
                 const adoBtn = document.getElementById("pcAdoLinkBtn");
@@ -4462,7 +4994,51 @@
                 pinCard.style.top =
                     Math.min(clientY + 10, window.innerHeight - 260) + "px";
                 pinCard.classList.add("open");
+                clampPinCard();
             }
+            function clampPinCard() {
+                const r = pinCard.getBoundingClientRect();
+                const m = 8;
+                const x = Math.max(
+                    m,
+                    Math.min(r.left, window.innerWidth - r.width - m),
+                );
+                const y = Math.max(
+                    m,
+                    Math.min(r.top, window.innerHeight - r.height - m),
+                );
+                pinCard.style.left = x + "px";
+                pinCard.style.top = y + "px";
+            }
+            window.addEventListener("resize", () => {
+                if (pinCard.classList.contains("open")) clampPinCard();
+            });
+            new ResizeObserver(() => {
+                if (pinCard.classList.contains("open")) clampPinCard();
+            }).observe(pinCard);
+            (() => {
+                const h = document.getElementById("pcDrag");
+                let off = null;
+                h.addEventListener("pointerdown", (e) => {
+                    const r = pinCard.getBoundingClientRect();
+                    off = { x: e.clientX - r.left, y: e.clientY - r.top };
+                    h.setPointerCapture(e.pointerId);
+                    pinCard.classList.add("dragging");
+                    e.preventDefault();
+                });
+                h.addEventListener("pointermove", (e) => {
+                    if (!off) return;
+                    pinCard.style.left = e.clientX - off.x + "px";
+                    pinCard.style.top = e.clientY - off.y + "px";
+                    clampPinCard();
+                });
+                const end = () => {
+                    off = null;
+                    pinCard.classList.remove("dragging");
+                };
+                h.addEventListener("pointerup", end);
+                h.addEventListener("pointercancel", end);
+            })();
             document.getElementById("pcCancel").onclick = () => {
                 pinCard.classList.remove("open");
             };
@@ -4493,6 +5069,7 @@
                 p.note = text;
                 document.getElementById("pcNote").value = "";
                 renderThread(p);
+                render();
             };
             document.getElementById("pcAdoLinkBtn").onclick = () => {
                 const ado = promptForAdoLink(null);
@@ -5300,8 +5877,6 @@
             }
 
             /* ============================================================ SITEMAP ============================================================ */
-            const sitemap = document.getElementById("sitemap");
-            const sitemapBackdrop = document.getElementById("sitemapBackdrop");
             document.getElementById("newBoardBtn").onclick = () => {
                 if (
                     !window.confirm(
@@ -5328,68 +5903,66 @@
                 selectedDrawingCv = null;
                 render();
             };
-            document.getElementById("mapBtn").onclick = () => {
-                buildSitemap();
-                sitemap.classList.add("open");
-                sitemapBackdrop.classList.add("open");
-            };
-            document.getElementById("clearCanvasBtn").onclick = async () => {
-                const ok = await showConfirm({
-                    title: "Clear this canvas?",
-                    bodyHtml:
-                        "This removes <strong>everything</strong> on the current canvas — screens, text, images, links, pins, frames and drawings — including screens nested inside them. You can Undo afterwards.",
-                    confirmLabel: "Clear canvas",
-                });
-                if (!ok) return;
-                pushUndo();
-                const cv = getCanvas(path);
-                cv.nodes = [];
-                cv.assets = (cv.assets || []).slice(0, 0);
-                cv.pins.length = 0;
-                cv.drawings.length = 0;
-                cv.frames = (cv.frames || []).slice(0, 0);
-                cv.children = {};
-                multiSelected.clear();
-                selectedEl = null;
-                selectedData = null;
-                selectedDrawing = null;
-                selectedDrawingCv = null;
-                if (!pathValid(path)) path = ["root"];
-                render();
-            };
-            document.getElementById("closeMap").onclick = () => {
-                sitemap.classList.remove("open");
-                sitemapBackdrop.classList.remove("open");
-            };
-            sitemapBackdrop.addEventListener("click", () => {
-                sitemap.classList.remove("open");
-                sitemapBackdrop.classList.remove("open");
-            });
+            function setLegendOpen(open) {
+                document.body.classList.toggle("legend-hidden", !open);
+                const btn = document.getElementById("legendBtn");
+                btn.classList.toggle("active", open);
+                btn.title = open ? "Hide pin legend" : "Show pin legend";
+                try {
+                    localStorage.setItem("envision-legend-open", open ? "1" : "0");
+                } catch (e) {}
+            }
+            document.getElementById("legendBtn").onclick = () =>
+                setLegendOpen(document.body.classList.contains("legend-hidden"));
+            try {
+                if (localStorage.getItem("envision-legend-open") === "0")
+                    setLegendOpen(false);
+            } catch (e) {}
+            function setMapOpen(open) {
+                document.body.classList.toggle("map-open", open);
+                const btn = document.getElementById("mapBtn");
+                btn.classList.toggle("active", open);
+                btn.title = open ? "Hide sitemap" : "Show sitemap";
+                if (open) buildSitemap();
+                try {
+                    localStorage.setItem("envision-map-open", open ? "1" : "0");
+                } catch (e) {}
+            }
+            document.getElementById("mapBtn").onclick = () =>
+                setMapOpen(!document.body.classList.contains("map-open"));
+            try {
+                if (localStorage.getItem("envision-map-open") === "1")
+                    setMapOpen(true);
+            } catch (e) {}
             function buildSitemap() {
                 const container = document.getElementById("smapTree");
                 container.innerHTML = "";
-                function walk(node, depth, parentPath) {
+                function walk(node, depth, parentPath, parentEl) {
                     const fullPath = [...parentPath, node.id];
                     const row = document.createElement("div");
                     row.className =
                         "smap-node" +
                         (samePath(fullPath, path) ? " active" : "");
-                    row.style.paddingLeft = 12 + depth * 22 + "px";
                     const childCount = Object.keys(node.children).length,
                         pinCount = node.pins.length;
-                    row.innerHTML = `<span class="smap-dot"></span>${node.title}<span class="smap-meta">${childCount ? childCount + " screens · " : ""}${pinCount} pin${pinCount === 1 ? "" : "s"}</span>`;
+                    row.innerHTML = `<span class="smap-dot"></span><span class="smap-title">${node.title}</span><span class="smap-meta" title="${childCount ? childCount + (childCount === 1 ? " screen" : " screens") + " · " : ""}${pinCount} pin${pinCount === 1 ? "" : "s"}">${pinCount} pin${pinCount === 1 ? "" : "s"}</span>`;
                     row.onclick = () => {
                         path = fullPath;
                         render();
-                        sitemap.classList.remove("open");
-                        sitemapBackdrop.classList.remove("open");
                     };
-                    container.appendChild(row);
-                    Object.values(node.children).forEach((c) =>
-                        walk(c, depth + 1, fullPath),
-                    );
+                    const item = document.createElement("div");
+                    item.className = "smap-item";
+                    item.appendChild(row);
+                    parentEl.appendChild(item);
+                    const kids = Object.values(node.children);
+                    if (kids.length) {
+                        const wrap = document.createElement("div");
+                        wrap.className = "smap-children";
+                        item.appendChild(wrap);
+                        kids.forEach((c) => walk(c, depth + 1, fullPath, wrap));
+                    }
                 }
-                walk(tree, 0, []);
+                walk(tree, 0, [], container);
             }
             function samePath(a, b) {
                 return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -5397,14 +5970,14 @@
 
             /* ============================================================ STATUS/SPRINT OVERLAY ============================================================ */
             const OVERLAY_PALETTE = [
-                "#3D6FA8",
-                "#B5822E",
-                "#2E7D8C",
-                "#7A4FA0",
-                "#C2622E",
-                "#5A8F5A",
-                "#B5483A",
-                "#6B6BAE",
+                "#0A7DFF",
+                "#FE7E00",
+                "#12B76A",
+                "#8A3FFC",
+                "#FF465F",
+                "#231EDC",
+                "#0A8A9C",
+                "#CC334F",
             ];
             const overlayColorCache = {};
             function overlayColor(key) {
@@ -5419,59 +5992,97 @@
                 return overlayColorCache[key];
             }
             function collectOverlayKeys(node, mode, set) {
-                node.pins.forEach((p) =>
-                    set.add(
-                        mode === "sprint"
-                            ? p.sprint
-                            : p.ado
-                              ? p.ado.status
-                              : p.status === "done"
-                                ? "Done"
-                                : "No ADO link",
-                    ),
-                );
+                node.pins.forEach((p) => set.add(pinOverlayKey(p, mode)));
                 Object.values(node.children).forEach((c) =>
                     collectOverlayKeys(c, mode, set),
                 );
             }
-            function renderOverlayLegend() {
+            const PIN_TYPES = [
+                ["bug", "Bug"],
+                ["feature", "Feature"],
+                ["question", "Question"],
+                ["observation", "Observation"],
+                ["idea", "Idea"],
+                ["risk", "Risk"],
+                ["done", "Done"],
+            ];
+            const escHtml = (v) =>
+                String(v).replace(
+                    /[&<>"]/g,
+                    (c) =>
+                        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+                );
+            function renderOverlayLegend(visiblePins) {
                 const legend = document.getElementById("overlayLegend");
-                if (overlayMode === "off") {
-                    legend.classList.remove("open");
-                    return;
-                }
-                const keys = new Set();
-                collectOverlayKeys(tree, overlayMode, keys);
-                legend.innerHTML =
-                    `<div style="margin-bottom:6px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;">${overlayMode === "sprint" ? "By sprint" : "By ADO status"}</div>` +
-                    [...keys]
-                        .map(
-                            (k) =>
-                                `<div class="legend-row"><span class="legend-swatch" style="background:${overlayColor(k)}"></span>${k}</div>`,
-                        )
-                        .join("");
-                legend.classList.add("open");
+                const counts = {};
+                visiblePins.forEach((p) =>
+                    ["type", "sprint", "status"].forEach((m) => {
+                        const id = m + "\u0000" + pinOverlayKey(p, m);
+                        counts[id] = (counts[id] || 0) + 1;
+                    }),
+                );
+                const row = (mode, key, swatch, label) =>
+                    `<div class="legend-row${overlayFocus && overlayFocus.mode === mode && overlayFocus.key === key ? " focused" : ""}" data-key="${escHtml(key)}" title="Click to focus on ${escHtml(label)} only">${swatch}${escHtml(label)}<span class="legend-count">${counts[mode + "\u0000" + key] || 0}</span></div>`;
+                const rows = {
+                    type: PIN_TYPES.map(([t, label]) =>
+                        row(
+                            "type",
+                            t,
+                            `<span class="pin legend-pin ${t}">${PIN_GLYPHS[t] || "✓"}</span>`,
+                            label,
+                        ),
+                    ).join(""),
+                };
+                legend.innerHTML = [
+                    ["type", "By type"],
+                    ["sprint", "By sprint"],
+                    ["status", "By ADO status"],
+                ]
+                    .map(([mode, title]) => {
+                        if (!rows[mode]) {
+                            const keys = new Set();
+                            collectOverlayKeys(tree, mode, keys);
+                            rows[mode] = [...keys]
+                                .map((k) =>
+                                    row(
+                                        mode,
+                                        k,
+                                        `<span class="legend-swatch" style="background:${overlayColor(k)}"></span>`,
+                                        k,
+                                    ),
+                                )
+                                .join("");
+                        }
+                        return (
+                            `<div class="legend-section${overlayMode === mode ? " active" : ""}${overlayFocus && overlayFocus.mode === mode ? " has-focus" : ""}" data-mode="${mode}">` +
+                            `<div class="legend-title" title="Colour pins ${title.toLowerCase()}">${title}</div>` +
+                            rows[mode] +
+                            "</div>"
+                        );
+                    })
+                    .join("");
             }
+            // Title: choose how pins are coloured. Row: focus on that group
+            // (click again to clear); other pins are dimmed.
             document
-                .getElementById("overlayBtn")
-                .addEventListener("click", () => {
-                    overlayMode =
-                        overlayMode === "off"
-                            ? "sprint"
-                            : overlayMode === "sprint"
-                              ? "status"
-                              : "off";
-                    document.getElementById("overlayBtn").title =
-                        "Overlay: " +
-                        (overlayMode === "off"
-                            ? "Off"
-                            : overlayMode === "sprint"
-                              ? "Sprint"
-                              : "ADO Status");
-                    document
-                        .getElementById("overlayBtn")
-                        .classList.toggle("active", overlayMode !== "off");
-                    renderOverlayLegend();
+                .getElementById("overlayLegend")
+                .addEventListener("click", (e) => {
+                    const section = e.target.closest(".legend-section");
+                    if (!section) return;
+                    const mode = section.dataset.mode;
+                    const rowEl = e.target.closest(".legend-row");
+                    if (rowEl) {
+                        const key = rowEl.dataset.key;
+                        const same =
+                            overlayFocus &&
+                            overlayFocus.mode === mode &&
+                            overlayFocus.key === key;
+                        overlayFocus = same ? null : { mode, key };
+                        overlayMode = mode;
+                    } else if (e.target.closest(".legend-title")) {
+                        overlayMode = mode;
+                        overlayFocus = null;
+                    } else return;
                     render();
                 });
 
@@ -5486,6 +6097,7 @@
                             path: p,
                             text: node.title,
                             kind: "Canvas",
+                            ref: null,
                         });
                     node.nodes.forEach((n) => {
                         if (n.label.toLowerCase().includes(query))
@@ -5493,6 +6105,7 @@
                                 path: p,
                                 text: n.label,
                                 kind: "Screen",
+                                ref: n,
                             });
                     });
                     node.pins.forEach((pin) => {
@@ -5507,6 +6120,7 @@
                                 kind:
                                     pin.type[0].toUpperCase() +
                                     pin.type.slice(1),
+                                ref: pin,
                             });
                     });
                     Object.entries(node.children).forEach(([id, c]) =>
@@ -5515,6 +6129,34 @@
                 }
                 walk(tree, ["root"]);
                 return results.slice(0, 20);
+            }
+            // Centre the matched item and zoom so it fills the canvas area.
+            function focusSearchResult(result) {
+                lastZoomTarget = null; // otherwise zoomToFit would toggle back to 100%
+                if (!result.ref) {
+                    fitToContent();
+                    return;
+                }
+                const el = domByObj.get(result.ref);
+                if (!el) return;
+                const pinEl = el.classList.contains("pin")
+                    ? el
+                    : el.querySelector(".pin");
+                if (!pinEl) {
+                    zoomToFit(el, null);
+                    return;
+                }
+                // Pins are tiny: centre on the marker at a comfortable zoom instead of maxing out
+                const vpRect = viewportEl.getBoundingClientRect();
+                const r = pinEl.getBoundingClientRect();
+                const cx = (r.left + r.width / 2 - vpRect.left - panX) / zoom;
+                const cy = (r.top + r.height / 2 - vpRect.top - panY) / zoom;
+                setZoomAnim(true);
+                zoom = 3;
+                panX = vpRect.width / 2 - cx * zoom;
+                panY = vpRect.height / 2 - cy * zoom;
+                applyTransform();
+                setTimeout(() => setZoomAnim(false), 460);
             }
             const searchInput = document.getElementById("searchInput");
             const searchResultsEl = document.getElementById("searchResults");
@@ -5533,7 +6175,7 @@
                 searchResultsEl.innerHTML = results
                     .map(
                         (r, i) =>
-                            `<div class="sr-item" data-i="${i}"><div class="sr-path">${r.kind} · ${r.path.slice(1).join(" / ") || "Product Overview"}</div><div class="sr-text">${r.text}</div></div>`,
+                            `<div class="sr-item" data-i="${i}"><div class="sr-path">${r.kind} · ${escHtml(r.path.slice(1).join(" / ") || "Product Overview")}</div><div class="sr-text">${escHtml(r.text)}</div></div>`,
                     )
                     .join("");
                 searchResultsEl.classList.add("open");
@@ -5545,6 +6187,7 @@
                             render();
                             searchResultsEl.classList.remove("open");
                             searchInput.value = "";
+                            focusSearchResult(results[i]);
                         });
                     });
             });
