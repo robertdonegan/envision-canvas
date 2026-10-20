@@ -5260,7 +5260,7 @@
                 threadEl.innerHTML = p.comments
                     .map(
                         (c, i) =>
-                            `<div class="pc-comment" data-ci="${i}"><div class="pcc-actions"><button type="button" class="pcc-edit-btn" title="Edit comment">${PCC_EDIT_ICON}</button><button type="button" class="pcc-del pcc-del-btn" title="Delete comment">${PCC_DEL_ICON}</button></div><div class="pcc-meta">${escHtml(c.author)} · ${escHtml(c.time)}</div><div class="pcc-text">${escHtml(c.text)}</div></div>`,
+                            `<div class="pc-comment" data-ci="${i}"><div class="pcc-actions"><button type="button" class="pcc-edit-btn" title="Edit comment">${PCC_EDIT_ICON}</button><button type="button" class="pcc-del pcc-del-btn" title="Delete comment">${PCC_DEL_ICON}</button></div><div class="pcc-meta">${escHtml(c.time)}</div><div class="pcc-text">${escHtml(c.text)}</div></div>`,
                     )
                     .join("");
                 threadEl.scrollTop = keepScroll
