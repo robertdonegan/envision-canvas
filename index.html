@@ -922,7 +922,7 @@
                 outline-offset: 11px;
             }
             .node-head {
-                height: 34px;
+                height: 26px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -944,11 +944,11 @@
                 background: var(--terminal);
                 color: #fff;
                 font-family: var(--mono);
-                font-size: calc(12px * var(--ts-pill));
+                font-size: calc(10.5px * var(--ts-pill));
                 font-weight: 600;
                 letter-spacing: 0.02em;
-                padding: calc(4px * var(--ts-pill)) calc(10px * var(--ts-pill));
-                border-radius: calc(11px * var(--ts-pill));
+                padding: calc(3px * var(--ts-pill)) calc(8px * var(--ts-pill));
+                border-radius: calc(9px * var(--ts-pill));
             }
             .badge-live .dot {
                 width: calc(7px * var(--ts-pill));
@@ -971,19 +971,19 @@
             }
             .badge-static {
                 font-family: var(--mono);
-                font-size: calc(12px * var(--ts-pill));
+                font-size: calc(10.5px * var(--ts-pill));
                 font-weight: 600;
                 letter-spacing: 0.02em;
                 color: var(--ink-dim);
                 background: var(--bg-canvas);
-                padding: calc(4px * var(--ts-pill)) calc(10px * var(--ts-pill));
-                border-radius: calc(11px * var(--ts-pill));
+                padding: calc(3px * var(--ts-pill)) calc(8px * var(--ts-pill));
+                border-radius: calc(9px * var(--ts-pill));
                 border: 1px solid var(--border);
             }
             .node-thumb {
                 position: relative;
                 width: 100%;
-                height: calc(100% - 64px);
+                height: calc(100% - 52px);
                 background: #ffffff;
                 display: flex;
                 align-items: center;
@@ -1008,7 +1008,7 @@
                 bottom: 0;
                 left: 0;
                 right: 0;
-                height: 30px;
+                height: 26px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -1024,7 +1024,7 @@
                 border-radius: 3px;
                 padding: 1px 3px;
                 margin: -1px -3px;
-                font-size: calc(14.5px * var(--ts-title));
+                font-size: calc(13px * var(--ts-title));
                 font-weight: 700;
                 color: var(--ink);
                 flex: 1 1 auto;
@@ -1117,6 +1117,28 @@
             .node-delete svg {
                 width: calc(14px * var(--ts-ctl));
                 height: calc(14px * var(--ts-ctl));
+            }
+            /* Compact jump-screen header/footer controls */
+            .node .node-dive,
+            .node .node-upload,
+            .node .node-delete,
+            .node .node-diff {
+                height: calc(18px * var(--ts-ctl));
+            }
+            .node .node-upload,
+            .node .node-delete,
+            .node .node-diff {
+                width: calc(18px * var(--ts-ctl));
+            }
+            .node .node-dive svg,
+            .node .node-upload svg,
+            .node .node-delete svg,
+            .node .node-diff svg {
+                width: calc(12px * var(--ts-ctl));
+                height: calc(12px * var(--ts-ctl));
+            }
+            .node .node-btn-label {
+                font-size: calc(9.5px * var(--ts-ctl));
             }
             .node-diff svg {
                 width: calc(14px * var(--ts-ctl));
@@ -1233,7 +1255,7 @@
             .node-thumb img {
                 width: 100%;
                 height: 100%;
-                object-fit: cover;
+                object-fit: contain;
                 display: block;
             }
 
@@ -3696,13 +3718,19 @@
             }
 
             let lastZoomTarget = null;
-            function zoomToFit(el, dataObj) {
+            function zoomToFit(el, dataObj, anchor) {
                 if (dataObj && lastZoomTarget === dataObj) {
                     lastZoomTarget = null;
                     setZoomAnim(true);
+                    // Return to 100% keeping the clicked point under the cursor
+                    const vr = viewportEl.getBoundingClientRect();
+                    const ax = anchor ? anchor.x - vr.left : vr.width / 2,
+                        ay = anchor ? anchor.y - vr.top : vr.height / 2;
+                    const cx = (ax - panX) / zoom,
+                        cy = (ay - panY) / zoom;
                     zoom = 1;
-                    panX = 0;
-                    panY = 0;
+                    panX = ax - cx;
+                    panY = ay - cy;
                     applyTransform();
                     setTimeout(
                         () => setZoomAnim(false),
@@ -4235,6 +4263,22 @@
       </div>
       <div class="node-thumb">${n.thumb ? `<img src="${n.thumb}" alt="${n.label}" draggable="false">` : fakeThumb()}</div>
       <div class="node-foot"><span class="node-label" title="Double-click to rename">${n.label}</span><button class="node-dive" title="Dive into this screen"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#fi-dive-clip)"><path d="M8 0.75C8.41421 0.75 8.75 1.08579 8.75 1.5V2.2998C11.3257 2.63539 13.3646 4.67434 13.7002 7.25H14.5C14.9142 7.25 15.25 7.58579 15.25 8C15.25 8.41421 14.9142 8.75 14.5 8.75H13.7002C13.3646 11.3256 11.3256 13.3636 8.75 13.6992V14.5C8.75 14.9142 8.41421 15.25 8 15.25C7.58579 15.25 7.25 14.9142 7.25 14.5V13.6992C4.6744 13.3636 2.63539 11.3256 2.2998 8.75H1.5C1.08579 8.75 0.75 8.41421 0.75 8C0.75 7.58579 1.08579 7.25 1.5 7.25H2.2998C2.63539 4.67434 4.67434 2.63539 7.25 2.2998V1.5C7.25 1.08579 7.58579 0.75 8 0.75ZM8.75 4.5C8.75 4.91421 8.41421 5.25 8 5.25C7.58579 5.25 7.25 4.91421 7.25 4.5V3.81641C5.50407 4.1273 4.12835 5.50409 3.81738 7.25H4.5C4.91421 7.25 5.25 7.58579 5.25 8C5.25 8.41421 4.91421 8.75 4.5 8.75H3.81738C4.12834 10.4959 5.50415 11.8717 7.25 12.1826V11.5C7.25 11.0858 7.58579 10.75 8 10.75C8.41421 10.75 8.75 11.0858 8.75 11.5V12.1826C10.4959 11.8717 11.8717 10.4959 12.1826 8.75H11.5C11.0858 8.75 10.75 8.41421 10.75 8C10.75 7.58579 11.0858 7.25 11.5 7.25H12.1826C11.8717 5.50409 10.4959 4.1273 8.75 3.81641V4.5ZM8 6.25C8.9665 6.25 9.75 7.0335 9.75 8C9.75 8.9665 8.9665 9.75 8 9.75C7.0335 9.75 6.25 8.9665 6.25 8C6.25 7.0335 7.0335 6.25 8 6.25ZM8 7.75C7.86193 7.75 7.75 7.86193 7.75 8C7.75 8.13807 7.86193 8.25 8 8.25C8.13807 8.25 8.25 8.13807 8.25 8C8.25 7.86193 8.13807 7.75 8 7.75Z" fill="currentColor"/></g><defs><clipPath id="fi-dive-clip"><rect width="16" height="16" fill="white"/></clipPath></defs></svg><span class="node-btn-label">Dive in</span></button></div>`;
+                    const thumbImg = el.querySelector(".node-thumb img");
+                    if (thumbImg)
+                        thumbImg.addEventListener("load", () => {
+                            // Wrap the screen around the image's own shape
+                            if (!thumbImg.naturalWidth) return;
+                            const h =
+                                Math.round(
+                                    n.w *
+                                        (thumbImg.naturalHeight /
+                                            thumbImg.naturalWidth),
+                                ) + NODE_CHROME_H;
+                            if (Math.abs(h - n.h) > 1) {
+                                n.h = h;
+                                render();
+                            }
+                        });
                     attachDragSelect(el, n);
                     attachConnectorAnchors(el, n);
                     domByObj.set(n, el);
@@ -4825,6 +4869,7 @@
             document.addEventListener("dragstart", (e) => {
                 if (e.target && e.target.tagName === "IMG") e.preventDefault();
             });
+            const NODE_CHROME_H = 52; // header 26 + footer 26
             function openImagePicker(node) {
                 imageUploadTarget = node;
                 imgFileInput.value = "";
@@ -4846,10 +4891,7 @@
                             const w = target.w || 220;
                             const ratio = img.naturalHeight / img.naturalWidth;
                             target.w = w;
-                            target.h = Math.max(
-                                104,
-                                Math.min(584, Math.round(w * ratio) + 48),
-                            );
+                            target.h = Math.round(w * ratio) + NODE_CHROME_H;
                             target.versions = target.versions || [];
                             target.versions.push({
                                 label: target.version || "v1",
@@ -4889,7 +4931,7 @@
                 el.addEventListener("click", (e) => {
                     if (e.metaKey || e.ctrlKey) {
                         e.stopPropagation();
-                        zoomToFit(el, dataObj);
+                        zoomToFit(el, dataObj, { x: e.clientX, y: e.clientY });
                     }
                 });
                 el.addEventListener("pointerdown", (e) => {
@@ -5087,7 +5129,7 @@
                 el.addEventListener("click", (e) => {
                     if (e.metaKey || e.ctrlKey) {
                         e.stopPropagation();
-                        zoomToFit(el, p);
+                        zoomToFit(el, p, { x: e.clientX, y: e.clientY });
                     }
                 });
                 el.addEventListener("pointerdown", (e) => {
