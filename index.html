@@ -922,7 +922,9 @@
                 outline-offset: 11px;
             }
             .node-head {
-                height: 26px;
+                height: 28px;
+                cursor: grab;
+                container-type: inline-size;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -983,7 +985,7 @@
             .node-thumb {
                 position: relative;
                 width: 100%;
-                height: calc(100% - 52px);
+                height: calc(100% - 28px);
                 background: #ffffff;
                 display: flex;
                 align-items: center;
@@ -1003,22 +1005,6 @@
                 gap: calc(2px * var(--ts-ctl));
                 overflow: hidden;
             }
-            .node-foot {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                height: 26px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 0 8px;
-                background: rgba(255, 255, 255, 0.88);
-                border-top: 1px solid var(--border);
-                font-family: var(--mono);
-                font-size: 9.5px;
-                color: var(--ink-dim);
-            }
             .node-label {
                 cursor: text;
                 border-radius: 3px;
@@ -1027,7 +1013,8 @@
                 font-size: calc(13px * var(--ts-title));
                 font-weight: 700;
                 color: var(--ink);
-                flex: 1 1 auto;
+                flex: 1 1 0;
+                margin-left: calc(4px * var(--ts-ctl));
                 min-width: 0;
                 white-space: nowrap;
                 overflow: hidden;
@@ -1067,6 +1054,7 @@
                     color 0.12s;
             }
             .node-dive:hover,
+            .node-delete:hover,
             .node-upload:hover,
             .image-card .img-upload:hover,
             .node-diff:hover {
@@ -1074,26 +1062,15 @@
                 --btn-stroke: var(--border-strong);
                 color: var(--ink);
             }
-            /* Flood Component Library danger button: red fill, no border, light text */
-            .node-delete {
-                background: var(--red);
-                --btn-stroke: var(--red);
-                color: #fafafa;
+            .node-head .node-dive,
+            .node-head .node-upload,
+            .node-head .node-delete,
+            .node-head .node-diff {
+                margin-left: 0;
             }
-            .node-delete:hover {
-                background: #b52c46;
-                --btn-stroke: #b52c46;
-                color: #fafafa;
-            }
-            .node-dive {
-                margin-left: calc(6px * var(--ts-ctl));
-            }
-            .node-upload {
-                margin-left: auto;
-            }
-            .node-delete,
-            .node-diff {
-                margin-left: calc(4px * var(--ts-ctl));
+            /* Dive-in button hidden for now (double-click still dives in) */
+            .node-head .node-dive {
+                display: none;
             }
             .node-diff,
             .node-upload,
@@ -1139,6 +1116,23 @@
             }
             .node .node-btn-label {
                 font-size: calc(9.5px * var(--ts-ctl));
+            }
+            /* Reflow the top bar as the screen narrows: Dive in drops its
+               label, then the status pill drops its version text */
+            @container (max-width: 270px) {
+                .node-head .node-btn-label {
+                    display: none;
+                }
+                .node-head .node-dive {
+                    width: calc(18px * var(--ts-ctl));
+                    padding: 0;
+                }
+            }
+            @container (max-width: 190px) {
+                .node-head .badge-live,
+                .node-head .badge-static {
+                    max-width: 38%;
+                }
             }
             .node-diff svg {
                 width: calc(14px * var(--ts-ctl));
@@ -1464,7 +1458,8 @@
                 display: flex;
                 align-items: flex-start;
                 transform-origin: 12.5px 12.5px;
-                transform: scale(var(--ts, 1));
+                /* cancel the canvas zoom so pins stay a constant on-screen size */
+                transform: scale(calc(1 / var(--zoom, 1)));
                 z-index: 5;
             }
             .pin {
@@ -1966,6 +1961,34 @@
                 touch-action: none;
                 user-select: none;
                 border-bottom: 1px solid var(--border);
+            }
+            #pinCard .pc-drag {
+                position: relative;
+            }
+            #pinCard .pc-close {
+                position: absolute;
+                top: 2px;
+                right: 6px;
+                width: 16px;
+                height: 16px;
+                padding: 0;
+                border: none;
+                border-radius: 2px;
+                background: transparent;
+                color: var(--ink-dim);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            #pinCard .pc-close:hover {
+                background: var(--bg-canvas);
+                color: var(--ink);
+            }
+            #pinCard .pc-close svg {
+                width: 14px;
+                height: 14px;
+                display: block;
             }
             #pinCard .pc-drag::before {
                 content: "";
@@ -2779,7 +2802,9 @@
             </aside>
 
             <div id="pinCard">
-                <div class="pc-drag" id="pcDrag" title="Drag to move"></div>
+                <div class="pc-drag" id="pcDrag" title="Drag to move">
+                    <button type="button" class="pc-close" id="pcClose" title="Close" aria-label="Close" data-ui-icon="cancel"></button>
+                </div>
                 <div class="pc-row">
                     <div style="flex: 1">
                         <label>Type</label>
@@ -4254,15 +4279,16 @@
                     el.innerHTML = `
       <div class="node-head">${
           n.kind === "live"
-              ? `<span class="badge-live badge-edit"><span class="dot"></span>LIVE · ${n.version}</span>`
-              : `<span class="badge-static badge-edit">FROZEN · ${n.version}</span>`
+              ? `<span class="badge-live badge-edit"><span class="dot"></span>${n.version}</span>`
+              : `<span class="badge-static badge-edit">${n.version}</span>`
       }
+        <span class="node-label" title="Double-click to rename">${n.label}</span>
+                ${n.versions && n.versions.length > 1 ? `<button class="node-diff" title="Compare versions">${uiIcon("switch")}</button>` : ""}
+        <button class="node-dive" title="Dive into this screen"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#fi-dive-clip)"><path d="M8 0.75C8.41421 0.75 8.75 1.08579 8.75 1.5V2.2998C11.3257 2.63539 13.3646 4.67434 13.7002 7.25H14.5C14.9142 7.25 15.25 7.58579 15.25 8C15.25 8.41421 14.9142 8.75 14.5 8.75H13.7002C13.3646 11.3256 11.3256 13.3636 8.75 13.6992V14.5C8.75 14.9142 8.41421 15.25 8 15.25C7.58579 15.25 7.25 14.9142 7.25 14.5V13.6992C4.6744 13.3636 2.63539 11.3256 2.2998 8.75H1.5C1.08579 8.75 0.75 8.41421 0.75 8C0.75 7.58579 1.08579 7.25 1.5 7.25H2.2998C2.63539 4.67434 4.67434 2.63539 7.25 2.2998V1.5C7.25 1.08579 7.58579 0.75 8 0.75ZM8.75 4.5C8.75 4.91421 8.41421 5.25 8 5.25C7.58579 5.25 7.25 4.91421 7.25 4.5V3.81641C5.50407 4.1273 4.12835 5.50409 3.81738 7.25H4.5C4.91421 7.25 5.25 7.58579 5.25 8C5.25 8.41421 4.91421 8.75 4.5 8.75H3.81738C4.12834 10.4959 5.50415 11.8717 7.25 12.1826V11.5C7.25 11.0858 7.58579 10.75 8 10.75C8.41421 10.75 8.75 11.0858 8.75 11.5V12.1826C10.4959 11.8717 11.8717 10.4959 12.1826 8.75H11.5C11.0858 8.75 10.75 8.41421 10.75 8C10.75 7.58579 11.0858 7.25 11.5 7.25H12.1826C11.8717 5.50409 10.4959 4.1273 8.75 3.81641V4.5ZM8 6.25C8.9665 6.25 9.75 7.0335 9.75 8C9.75 8.9665 8.9665 9.75 8 9.75C7.0335 9.75 6.25 8.9665 6.25 8C6.25 7.0335 7.0335 6.25 8 6.25ZM8 7.75C7.86193 7.75 7.75 7.86193 7.75 8C7.75 8.13807 7.86193 8.25 8 8.25C8.13807 8.25 8.25 8.13807 8.25 8C8.25 7.86193 8.13807 7.75 8 7.75Z" fill="currentColor"/></g><defs><clipPath id="fi-dive-clip"><rect width="16" height="16" fill="white"/></clipPath></defs></svg><span class="node-btn-label">Dive in</span></button>
         <button class="node-upload" title="Set jump screen image">${ADD_IMAGE_SVG}</button>
         <button class="node-delete" title="Delete screen"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.1874 4.74985C10.4873 4.74985 10.7599 4.74924 10.9843 4.7684C11.2162 4.78823 11.4728 4.83398 11.7196 4.97152C12.0682 5.16595 12.3405 5.47356 12.4901 5.8436C12.596 6.10552 12.6086 6.3659 12.5995 6.59848C12.5907 6.82342 12.5566 7.09385 12.5194 7.39145L11.9198 12.1913C11.8902 12.4278 11.8633 12.6476 11.826 12.8299C11.787 13.0214 11.726 13.2271 11.6014 13.4266C11.4215 13.7148 11.1616 13.9448 10.8534 14.0877C10.64 14.1866 10.4281 14.2211 10.2333 14.2362C10.0478 14.2505 9.82614 14.2498 9.58777 14.2498H6.41199C6.17385 14.2498 5.95282 14.2505 5.76746 14.2362C5.57268 14.2211 5.36076 14.1866 5.14734 14.0877C4.839 13.9448 4.57834 13.7148 4.39832 13.4266C4.27381 13.2271 4.21376 13.0213 4.17468 12.8299C4.13746 12.6476 4.11051 12.4278 4.08093 12.1913L3.48035 7.39145C3.44314 7.09384 3.40908 6.82343 3.40027 6.59848C3.39119 6.3659 3.40473 6.10552 3.51062 5.8436C3.66029 5.47371 3.93168 5.16591 4.28015 4.97152C4.52694 4.83395 4.78358 4.78824 5.0155 4.7684C5.23984 4.74922 5.51238 4.74985 5.81238 4.74985H10.1874ZM5.81238 6.24985C5.48629 6.24985 5.28897 6.25011 5.14343 6.26254C5.00567 6.27433 4.99096 6.29203 5.01062 6.2811C4.9609 6.30884 4.92264 6.35334 4.90125 6.4061C4.90952 6.38545 4.89392 6.4021 4.89929 6.53988C4.90501 6.68577 4.92821 6.88159 4.96863 7.20492L5.56921 12.0057C5.60162 12.2649 5.62146 12.4177 5.64441 12.5301C5.66532 12.6324 5.67831 12.6449 5.67078 12.6327C5.69638 12.6735 5.73351 12.706 5.77722 12.7264C5.76465 12.7207 5.7791 12.7321 5.88269 12.7401C5.99708 12.7489 6.15074 12.7498 6.41199 12.7498H9.58777C9.84898 12.7498 10.0027 12.7489 10.1171 12.7401C10.1821 12.7351 10.2124 12.7291 10.2225 12.7264C10.2663 12.706 10.3033 12.6736 10.329 12.6327C10.333 12.6231 10.3432 12.5942 10.3563 12.5301C10.3793 12.4177 10.3981 12.2649 10.4305 12.0057L11.0311 7.20492C11.0715 6.88155 11.0957 6.68578 11.1014 6.53988C11.1068 6.40228 11.0903 6.38558 11.0985 6.4061C11.0771 6.35334 11.0389 6.30882 10.9891 6.2811C11.0089 6.29213 10.9943 6.27434 10.8563 6.26254C10.7108 6.25013 10.5133 6.24985 10.1874 6.24985H5.81238ZM6.99988 7.24985C7.41405 7.24985 7.74981 7.58569 7.74988 7.99985V10.9998C7.74988 11.4141 7.41409 11.7498 6.99988 11.7498C6.58569 11.7498 6.24988 11.414 6.24988 10.9998V7.99985C6.24995 7.58571 6.58573 7.24987 6.99988 7.24985ZM8.99988 7.24985C9.41405 7.24985 9.74981 7.58569 9.74988 7.99985V10.9998C9.74988 11.4141 9.41409 11.7498 8.99988 11.7498C8.58569 11.7498 8.24988 11.414 8.24988 10.9998V7.99985C8.24995 7.58571 8.58573 7.24987 8.99988 7.24985ZM7.02917 1.74594C7.61694 1.35411 8.38278 1.35417 8.97058 1.74594L9.66394 2.20785C9.70496 2.2352 9.75331 2.24981 9.80261 2.24984H11.9999C12.4141 2.24984 12.7498 2.58569 12.7499 2.99984C12.7499 3.41406 12.4141 3.74985 11.9999 3.74985H9.80261C9.45718 3.74981 9.11933 3.64751 8.83191 3.4559L8.13855 2.99399C8.0546 2.9381 7.94513 2.93804 7.86121 2.99399L7.16785 3.4559C6.8804 3.64752 6.54261 3.74984 6.19714 3.74985H3.99988C3.58572 3.74978 3.24988 3.41402 3.24988 2.99984C3.24994 2.58573 3.58576 2.24991 3.99988 2.24984H6.19714C6.24648 2.24984 6.29476 2.23521 6.33582 2.20785L7.02917 1.74594Z" fill="currentColor"/></svg></button>
-        ${n.versions && n.versions.length > 1 ? `<button class="node-diff" title="Compare versions">${uiIcon("switch")}</button>` : ""}
       </div>
-      <div class="node-thumb">${n.thumb ? `<img src="${n.thumb}" alt="${n.label}" draggable="false">` : fakeThumb()}</div>
-      <div class="node-foot"><span class="node-label" title="Double-click to rename">${n.label}</span><button class="node-dive" title="Dive into this screen"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#fi-dive-clip)"><path d="M8 0.75C8.41421 0.75 8.75 1.08579 8.75 1.5V2.2998C11.3257 2.63539 13.3646 4.67434 13.7002 7.25H14.5C14.9142 7.25 15.25 7.58579 15.25 8C15.25 8.41421 14.9142 8.75 14.5 8.75H13.7002C13.3646 11.3256 11.3256 13.3636 8.75 13.6992V14.5C8.75 14.9142 8.41421 15.25 8 15.25C7.58579 15.25 7.25 14.9142 7.25 14.5V13.6992C4.6744 13.3636 2.63539 11.3256 2.2998 8.75H1.5C1.08579 8.75 0.75 8.41421 0.75 8C0.75 7.58579 1.08579 7.25 1.5 7.25H2.2998C2.63539 4.67434 4.67434 2.63539 7.25 2.2998V1.5C7.25 1.08579 7.58579 0.75 8 0.75ZM8.75 4.5C8.75 4.91421 8.41421 5.25 8 5.25C7.58579 5.25 7.25 4.91421 7.25 4.5V3.81641C5.50407 4.1273 4.12835 5.50409 3.81738 7.25H4.5C4.91421 7.25 5.25 7.58579 5.25 8C5.25 8.41421 4.91421 8.75 4.5 8.75H3.81738C4.12834 10.4959 5.50415 11.8717 7.25 12.1826V11.5C7.25 11.0858 7.58579 10.75 8 10.75C8.41421 10.75 8.75 11.0858 8.75 11.5V12.1826C10.4959 11.8717 11.8717 10.4959 12.1826 8.75H11.5C11.0858 8.75 10.75 8.41421 10.75 8C10.75 7.58579 11.0858 7.25 11.5 7.25H12.1826C11.8717 5.50409 10.4959 4.1273 8.75 3.81641V4.5ZM8 6.25C8.9665 6.25 9.75 7.0335 9.75 8C9.75 8.9665 8.9665 9.75 8 9.75C7.0335 9.75 6.25 8.9665 6.25 8C6.25 7.0335 7.0335 6.25 8 6.25ZM8 7.75C7.86193 7.75 7.75 7.86193 7.75 8C7.75 8.13807 7.86193 8.25 8 8.25C8.13807 8.25 8.25 8.13807 8.25 8C8.25 7.86193 8.13807 7.75 8 7.75Z" fill="currentColor"/></g><defs><clipPath id="fi-dive-clip"><rect width="16" height="16" fill="white"/></clipPath></defs></svg><span class="node-btn-label">Dive in</span></button></div>`;
+      <div class="node-thumb">${n.thumb ? `<img src="${n.thumb}" alt="${n.label}" draggable="false">` : fakeThumb()}</div>`;
                     const thumbImg = el.querySelector(".node-thumb img");
                     if (thumbImg)
                         thumbImg.addEventListener("load", () => {
@@ -4335,9 +4361,9 @@
                         openBadgeCard(n, e.clientX, e.clientY);
                     });
                     const labelEl = el.querySelector(".node-label");
-                    labelEl.addEventListener("pointerdown", (e) =>
-                        e.stopPropagation(),
-                    );
+                    labelEl.addEventListener("pointerdown", (e) => {
+                        if (labelEl.isContentEditable) e.stopPropagation();
+                    });
                     labelEl.addEventListener("dblclick", (e) => {
                         e.stopPropagation();
                         labelEl.contentEditable = "true";
@@ -4869,7 +4895,7 @@
             document.addEventListener("dragstart", (e) => {
                 if (e.target && e.target.tagName === "IMG") e.preventDefault();
             });
-            const NODE_CHROME_H = 52; // header 26 + footer 26
+            const NODE_CHROME_H = 28; // top bar only
             function openImagePicker(node) {
                 imageUploadTarget = node;
                 imgFileInput.value = "";
@@ -4941,6 +4967,10 @@
                         return; // those tools draw on top instead
                     e.stopPropagation();
                     el.setPointerCapture && el.setPointerCapture(e.pointerId);
+                    // Jump screens only move when dragged by their top bar
+                    const canMove =
+                        !el.classList.contains("node") ||
+                        !!e.target.closest(".node-head");
                     const startClientX = e.clientX,
                         startClientY = e.clientY,
                         origX = dataObj.x,
@@ -4959,6 +4989,7 @@
                     const onMove = (ev) => {
                         const dx = (ev.clientX - startClientX) / zoom,
                             dy = (ev.clientY - startClientY) / zoom;
+                        if (!canMove) return;
                         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
                         if (moved) {
                             if (groupOrigins) {
@@ -5448,6 +5479,11 @@
             document.getElementById("pcCancel").onclick = () => {
                 pinCard.classList.remove("open");
             };
+            const pcClose = document.getElementById("pcClose");
+            pcClose.addEventListener("pointerdown", (e) => e.stopPropagation());
+            pcClose.addEventListener("click", () =>
+                pinCard.classList.remove("open"),
+            );
             document.getElementById("pcDeletePin").onclick = () => {
                 if (!pendingPin || !pendingPin.existing) return;
                 if (
