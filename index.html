@@ -4032,7 +4032,7 @@
                 );
             }
 
-            function fitToContent() {
+            function fitToContent(maxZoom = 8) {
                 const cv = getCanvas(path);
                 let minX = Infinity,
                     minY = Infinity,
@@ -4094,7 +4094,7 @@
                 const newZoom = Math.max(
                     0.4,
                     Math.min(
-                        8,
+                        maxZoom,
                         Math.min(
                             (vp.width - padX * 2) / cw,
                             (vp.height - padY * 2) / ch,
@@ -4958,8 +4958,15 @@
                 });
 
                 applyTransform();
+                // Entering a different canvas: centre the view on its content
+                const canvasKey = path[path.length - 1];
+                if (canvasKey !== lastViewedCanvas) {
+                    lastViewedCanvas = canvasKey;
+                    fitToContent(1);
+                }
                 scheduleCloudSave();
             }
+            let lastViewedCanvas = null;
 
             function fakeThumb() {
                 return `<div class="thumb-ui">
