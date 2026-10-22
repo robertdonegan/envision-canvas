@@ -5955,7 +5955,27 @@
                     adoBtn.style.display = "flex";
                 }
             }
+            function pinCardDirty() {
+                const ex = pendingPin && pendingPin.existing;
+                if (!ex) return true;
+                return (
+                    document.getElementById("pcNote").value.trim() !== "" ||
+                    document.getElementById("pcType").value !== ex.type ||
+                    document.getElementById("pcSprint").value !== ex.sprint ||
+                    !!pinCard.querySelector("textarea.pcc-edit")
+                );
+            }
             function openPinCard(clientX, clientY, p) {
+                // Clicking the pin whose card is already open toggles it closed,
+                // unless there are unsaved edits (then leave the card alone)
+                if (
+                    pinCard.classList.contains("open") &&
+                    pendingPin &&
+                    pendingPin.existing === p
+                ) {
+                    if (!pinCardDirty()) pinCard.classList.remove("open");
+                    return;
+                }
                 pendingPin = { existing: p, mode: "view" };
                 document.getElementById("pcDeletePin").style.display =
                     "inline-flex";
