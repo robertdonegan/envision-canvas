@@ -1600,6 +1600,30 @@
             .pin.bug {
                 background: var(--pin-bug);
             }
+            .pin-group .pin.bug {
+                animation: bugPulse 2.8s ease-out infinite;
+            }
+            /* slow ring to draw the eye to open bugs; --pc follows overlay recolouring */
+            @keyframes bugPulse {
+                0% {
+                    box-shadow:
+                        0 1px 2px #0000001a,
+                        0 2px 4px #0000001a,
+                        0 0 0 0 color-mix(in srgb, var(--pc, var(--pin-bug)) 55%, transparent);
+                }
+                70%,
+                100% {
+                    box-shadow:
+                        0 1px 2px #0000001a,
+                        0 2px 4px #0000001a,
+                        0 0 0 11px color-mix(in srgb, var(--pc, var(--pin-bug)) 0%, transparent);
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .pin-group .pin.bug {
+                    animation: none;
+                }
+            }
             .pin.feature {
                 background: var(--pin-feature);
             }
@@ -1867,6 +1891,12 @@
                 stroke: var(--ink);
                 stroke-width: 2;
             }
+            #nodesLayer {
+                --conn-s: min(
+                    max(var(--ts, 1), calc(1 / var(--zoom, 1))),
+                    calc(1.6 / var(--zoom, 1))
+                );
+            }
             .arrow-handle {
                 position: absolute;
                 width: 14px;
@@ -1878,6 +1908,9 @@
                 cursor: grab;
                 z-index: 6;
                 touch-action: none;
+                /* cancel most of the canvas zoom: on-screen size is 1x when zoomed out,
+                   growing gently (zoom^0.25, capped at 1.6x) when zoomed in */
+                transform: scale(var(--conn-s));
             }
             .arrow-handle:active {
                 cursor: grabbing;
@@ -1893,9 +1926,10 @@
                 cursor: crosshair;
                 touch-action: none;
                 transition: transform 0.1s;
+                transform: scale(var(--conn-s));
             }
             .connector-anchor:hover {
-                transform: scale(1.3);
+                transform: scale(calc(1.3 * var(--conn-s)));
                 background: var(--terminal);
             }
 
@@ -4928,6 +4962,7 @@
                         el.style.background = overlayColor(
                             pinOverlayKey(p, overlayMode),
                         );
+                        el.style.setProperty("--pc", el.style.background);
                     }
                     if (
                         overlayFocus &&
@@ -5767,12 +5802,26 @@
             /* ============================================================ PIN CARD ============================================================ */
             const pinCard = document.getElementById("pinCard");
             let pendingPin = null;
-            let sprintsList = ["Sprint 15", "Sprint 16", "Backlog"];
+            const DEFAULT_SPRINTS = ["Sprint 15", "Sprint 16", "Backlog"];
+            // Defaults + sprints added by users (saved on the board) + any already used by pins
+            function getSprints() {
+                const list = [...DEFAULT_SPRINTS];
+                const add = (n) => {
+                    if (n && !list.includes(n)) list.push(n);
+                };
+                (tree.sprints || []).forEach(add);
+                (function walk(c) {
+                    (c.pins || []).forEach((pin) => add(pin.sprint));
+                    Object.values(c.children || {}).forEach(walk);
+                })(tree);
+                return list;
+            }
             function populateSprintSelect(selected) {
+                const sprintsList = getSprints();
                 const sel = document.getElementById("pcSprint");
                 sel.innerHTML =
                     sprintsList
-                        .map((s) => `<option value="${s}">${s}</option>`)
+                        .map((s) => `<option value="${escHtml(s)}">${escHtml(s)}</option>`)
                         .join("") +
                     `<option value="__add__">+ Add new sprint…</option>`;
                 sel.value = sprintsList.includes(selected)
@@ -5783,19 +5832,22 @@
                 .getElementById("pcSprint")
                 .addEventListener("change", (e) => {
                     if (e.target.value === "__add__") {
-                        const name = prompt(
-                            "New sprint name:",
-                            "Sprint " + (sprintsList.length + 15),
-                        );
-                        if (
-                            name &&
-                            name.trim() &&
-                            !sprintsList.includes(name.trim())
-                        ) {
-                            sprintsList.push(name.trim());
-                            populateSprintSelect(name.trim());
+                        const sprintsList = getSprints();
+                        const name = (
+                            prompt(
+                                "New sprint name:",
+                                "Sprint " + (sprintsList.length + 15),
+                            ) || ""
+                        ).trim();
+                        if (name && !sprintsList.includes(name)) {
+                            tree.sprints = [...(tree.sprints || []), name];
+                            scheduleCloudSave();
+                            populateSprintSelect(name);
                         } else {
-                            populateSprintSelect(sprintsList[0]);
+                            // Existing name: just select it
+                            populateSprintSelect(
+                                name || pendingPin?.existing?.sprint || sprintsList[0],
+                            );
                         }
                     }
                 });
