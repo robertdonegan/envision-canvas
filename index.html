@@ -3112,6 +3112,117 @@
                 if (recentSaved.length > 30) recentSaved.shift();
             }
 
+            /* Screenshots are stored as data URLs and made the board row several MB,
+               which hit Supabase's statement timeout. Large images are saved once
+               as their own rows (id "img-<hash>") and the board keeps "img:<hash>"
+               references, so edits only upload a few KB. */
+            const IMG_MIN_LEN = 20000;
+            const cloudImgs = new Set(); // image ids known to exist in the cloud
+            const imgIdByData = new Map(); // data URL -> id
+            const imgDataById = new Map(); // id -> data URL
+            function imgHash(str) {
+                let h1 = 0xdeadbeef,
+                    h2 = 0x41c6ce57;
+                for (let i = 0; i < str.length; i++) {
+                    const ch = str.charCodeAt(i);
+                    h1 = Math.imul(h1 ^ ch, 2654435761);
+                    h2 = Math.imul(h2 ^ ch, 1597334677);
+                }
+                h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+                h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+                return (
+                    (h2 >>> 0).toString(16).padStart(8, "0") +
+                    (h1 >>> 0).toString(16).padStart(8, "0") +
+                    str.length.toString(16)
+                );
+            }
+            function splitImages(node, images) {
+                if (Array.isArray(node))
+                    return node.map((v) => splitImages(v, images));
+                if (node && typeof node === "object") {
+                    const out = {};
+                    for (const k of Object.keys(node))
+                        out[k] = splitImages(node[k], images);
+                    return out;
+                }
+                if (
+                    typeof node === "string" &&
+                    node.length > IMG_MIN_LEN &&
+                    node.startsWith("data:image")
+                ) {
+                    let id = imgIdByData.get(node);
+                    if (!id) {
+                        id = imgHash(node);
+                        imgIdByData.set(node, id);
+                        imgDataById.set(id, node);
+                    }
+                    images[id] = node;
+                    return "img:" + id;
+                }
+                return node;
+            }
+            function collectImageRefs(node, ids) {
+                if (Array.isArray(node)) node.forEach((v) => collectImageRefs(v, ids));
+                else if (node && typeof node === "object")
+                    for (const k of Object.keys(node)) collectImageRefs(node[k], ids);
+                else if (typeof node === "string" && node.startsWith("img:"))
+                    ids.add(node.slice(4));
+            }
+            function fillImageRefs(node) {
+                if (Array.isArray(node)) return node.map(fillImageRefs);
+                if (node && typeof node === "object") {
+                    const out = {};
+                    for (const k of Object.keys(node)) out[k] = fillImageRefs(node[k]);
+                    return out;
+                }
+                if (typeof node === "string" && node.startsWith("img:"))
+                    return imgDataById.get(node.slice(4)) || "";
+                return node;
+            }
+            async function hydrateBoard(remote) {
+                const ids = new Set();
+                collectImageRefs(remote, ids);
+                const missing = [...ids].filter((id) => !imgDataById.has(id));
+                for (let i = 0; i < missing.length; i += 3) {
+                    const chunk = missing.slice(i, i + 3);
+                    const { data, error } = await sb
+                        .from("boards")
+                        .select("id,data")
+                        .in("id", chunk.map((id) => "img-" + id));
+                    if (error) throw error;
+                    for (const row of data || []) {
+                        const id = row.id.slice(4);
+                        const d = row.data && row.data.d;
+                        if (!d) continue;
+                        imgDataById.set(id, d);
+                        imgIdByData.set(d, id);
+                        cloudImgs.add(id);
+                    }
+                }
+                return ids.size ? fillImageRefs(remote) : remote;
+            }
+            async function pushBoard() {
+                const images = {};
+                const slim = splitImages(tree, images);
+                for (const id of Object.keys(images)) {
+                    if (cloudImgs.has(id)) continue;
+                    const { error } = await sb.from("boards").upsert({
+                        id: "img-" + id,
+                        data: { d: images[id] },
+                        updated_at: new Date().toISOString(),
+                    });
+                    if (error) return error;
+                    cloudImgs.add(id);
+                }
+                // Board row goes last so it never references a missing image
+                const { error } = await sb.from("boards").upsert({
+                    id: "envision-board",
+                    data: slim,
+                    updated_at: new Date().toISOString(),
+                });
+                return error;
+            }
+
             function scheduleCloudSave() {
                 // Never write back a board we just received, or a view-only re-render
                 if (!sb || applyingRemote) return;
@@ -3132,13 +3243,7 @@
                         lastSavedJson = json;
                         rememberSaved(json);
                         setSaveState("saving");
-                        const { error } = await sb
-                            .from("boards")
-                            .upsert({
-                                id: "envision-board",
-                                data: tree,
-                                updated_at: new Date().toISOString(),
-                            });
+                        const error = await pushBoard();
                         if (error) {
                             lastSavedJson = prevSaved;
                             throw error;
@@ -3170,9 +3275,15 @@
                             table: "boards",
                             filter: "id=eq.envision-board",
                         },
-                        (payload) => {
-                            const remote = payload.new && payload.new.data;
+                        async (payload) => {
+                            let remote = payload.new && payload.new.data;
                             if (!remote) return;
+                            try {
+                                remote = await hydrateBoard(remote);
+                            } catch (e) {
+                                console.warn("Could not load remote images:", e);
+                                return;
+                            }
                             // Unsaved local edits win; applying an older echo of our own
                             // save here is what made new jump screens vanish.
                             if (cloudSaveTimer) return;
@@ -3208,24 +3319,28 @@
                 }
                 try {
                     sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                    const { data, error } = await sb
-                        .from("boards")
-                        .select("data")
-                        .eq("id", "envision-board")
-                        .maybeSingle();
-                    if (error) throw error;
+                    // A large legacy row can hit the statement timeout, so retry
+                    let data = null;
+                    for (let attempt = 0; ; attempt++) {
+                        const res = await sb
+                            .from("boards")
+                            .select("data")
+                            .eq("id", "envision-board")
+                            .maybeSingle();
+                        if (!res.error) {
+                            data = res.data;
+                            break;
+                        }
+                        if (attempt >= 3) throw res.error;
+                        await new Promise((r) => setTimeout(r, 1500));
+                    }
                     if (data && data.data) {
-                        tree = data.data;
+                        tree = await hydrateBoard(data.data);
                         if (!pathValid(path)) path = ["root"];
                     } else {
                         rememberSaved(canon(tree));
-                        await sb
-                            .from("boards")
-                            .upsert({
-                                id: "envision-board",
-                                data: tree,
-                                updated_at: new Date().toISOString(),
-                            });
+                        const error = await pushBoard();
+                        if (error) throw error;
                     }
                 } catch (e) {
                     console.warn(
@@ -5027,14 +5142,33 @@
                 imgFileInput.value = "";
                 imgFileInput.click();
             }
+            // Downscale large screenshots so the board stays small enough to sync
+            function compressImage(img, dataUrl) {
+                if (dataUrl.length < 300000) return dataUrl;
+                const maxSide = 1600;
+                const scale = Math.min(
+                    1,
+                    maxSide / Math.max(img.naturalWidth, img.naturalHeight),
+                );
+                const c = document.createElement("canvas");
+                c.width = Math.round(img.naturalWidth * scale);
+                c.height = Math.round(img.naturalHeight * scale);
+                const ctx = c.getContext("2d");
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(0, 0, c.width, c.height);
+                ctx.drawImage(img, 0, 0, c.width, c.height);
+                const out = c.toDataURL("image/jpeg", 0.85);
+                return out.length < dataUrl.length ? out : dataUrl;
+            }
             imgFileInput.addEventListener("change", (e) => {
                 const file = e.target.files[0];
                 if (!file || !imageUploadTarget) return;
                 const reader = new FileReader();
                 reader.onload = () => {
-                    const dataUrl = reader.result;
+                    const origUrl = reader.result;
                     const img = new Image();
                     img.onload = () => {
+                        const dataUrl = compressImage(img, origUrl);
                         pushUndo();
                         const target = imageUploadTarget;
                         const isScreen = "childId" in target;
@@ -5073,7 +5207,7 @@
                         }
                         render();
                     };
-                    img.src = dataUrl;
+                    img.src = origUrl;
                 };
                 reader.readAsDataURL(file);
             });
