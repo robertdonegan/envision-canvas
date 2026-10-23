@@ -3083,6 +3083,7 @@
 
             <div id="moreMenu" role="menu" hidden>
                 <button role="menuitem" data-action="export-md"><span class="mi-ico" data-mi="download"></span>Export as Markdown</button>
+                <button role="menuitem" data-action="export-html"><span class="mi-ico" data-mi="download"></span>Export as HTML (with images)</button>
                 <button role="menuitem" data-action="export-json"><span class="mi-ico" data-mi="download"></span>Export as JSON</button>
                 <button role="menuitem" data-action="import"><span class="mi-ico" data-mi="upload"></span>Import JSON…</button>
                 <button role="menuitem" data-action="history"><span class="mi-ico" data-mi="history"></span>Version history…</button>
@@ -7894,6 +7895,140 @@
                 walk(tree, 0);
                 return md;
             }
+            /* ============================================================ EXPORT (self-contained HTML, images embedded) ============================================================ */
+            function buildExportHtml() {
+                const PIN_COL = {
+                    bug: "#ff465f",
+                    feature: "#0a7dff",
+                    question: "#d97500",
+                    observation: "#231edc",
+                    idea: "#8a3ffc",
+                    risk: "#ff6100",
+                    done: "#12b76a",
+                };
+                const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : "");
+                const secId = (p) => "c-" + p.join("-").replace(/[^\w-]/g, "_");
+                const MAX_W = 1100;
+                const toc = [];
+                const sections = [];
+                let sectionNo = 0;
+
+                function canvasView(cv, no, cvPath) {
+                    const rects = [];
+                    cv.nodes.forEach((n) => rects.push(getObjectRect(n, cv)));
+                    (cv.assets || []).forEach((a) => rects.push(getObjectRect(a, cv)));
+                    (cv.pins || []).forEach((p) => rects.push(getObjectRect(p, cv)));
+                    (cv.frames || []).forEach((f) => rects.push({ x: f.x, y: f.y, w: f.w, h: f.h }));
+                    (cv.drawings || []).forEach((d) => {
+                        if (d.type === "arrow") {
+                            const { p1, p2 } = resolveArrowEndpoints(d, cv);
+                            [p1, p2].forEach((q) => rects.push({ x: q.x, y: q.y, w: 0, h: 0 }));
+                        } else
+                            (d.points || []).forEach((q) => rects.push({ x: q.x, y: q.y, w: 0, h: 0 }));
+                    });
+                    const ok = rects.filter(Boolean);
+                    if (!ok.length) return '<p class="empty">Empty canvas</p>';
+                    const pad = 40;
+                    const x0 = Math.min(...ok.map((r) => r.x)) - pad,
+                        y0 = Math.min(...ok.map((r) => r.y)) - pad;
+                    const bw = Math.max(...ok.map((r) => r.x + r.w)) + pad - x0,
+                        bh = Math.max(...ok.map((r) => r.y + r.h)) + pad - y0;
+                    const s = Math.min(1, MAX_W / bw);
+                    const pos = (r) => `left:${Math.round(r.x - x0)}px;top:${Math.round(r.y - y0)}px;width:${Math.round(r.w)}px;`;
+                    let h = "";
+                    (cv.frames || []).forEach((f) => {
+                        h += `<div class="fr" style="${pos(f)}height:${Math.round(f.h)}px"><span>${escHtml(f.label || "")}</span></div>`;
+                    });
+                    cv.nodes.forEach((n) => {
+                        const label = escHtml(n.label || "Screen");
+                        const title = n.childId && cv.children[n.childId]
+                            ? `<a href="#${secId([...cvPath, n.childId])}">${label}</a>`
+                            : label;
+                        const badge = n.kind === "live" ? `<b class="live">● ${escHtml(n.version || "")}</b>` : `<b>${escHtml(n.version || "")}</b>`;
+                        const img = n.thumb
+                            ? `<img src="${n.thumb}" alt="${label}" style="height:${Math.round(n.h - 28)}px">`
+                            : `<div class="ph" style="height:${Math.round(n.h - 28)}px">no image</div>`;
+                        h += `<div class="nd" style="${pos(n)}height:${Math.round(n.h)}px"><div class="nh">${badge}<span>${title}</span></div>${img}</div>`;
+                    });
+                    (cv.assets || []).forEach((a) => {
+                        const r = getObjectRect(a, cv);
+                        if (a.type === "image") {
+                            const label = escHtml(a.label || "");
+                            h += `<div class="nd im" style="${pos(r)}height:${Math.round(r.h)}px">${a.thumb ? `<img src="${a.thumb}" alt="${label}" style="height:${Math.round(r.h - 32)}px">` : `<div class="ph" style="height:${Math.round(r.h - 32)}px">no image</div>`}<div class="nf">${label}</div></div>`;
+                        } else if (a.type === "text") {
+                            h += `<div class="tx" style="${pos(r)}">${escHtml(a.text || "").replace(/\n/g, "<br>")}</div>`;
+                        } else {
+                            h += `<div class="lk" style="${pos(r)}"><b>${escHtml(a.label || "Link")}</b><a href="${escHtml(a.url || "#")}">${escHtml(a.url || "")}</a></div>`;
+                        }
+                    });
+                    let svg = `<defs><marker id="m${no}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#333"/></marker></defs>`;
+                    (cv.drawings || []).forEach((d) => {
+                        if (d.type === "arrow") {
+                            const { p1, p2 } = resolveArrowEndpoints(d, cv);
+                            const head = d.head || "end";
+                            svg += `<line x1="${p1.x - x0}" y1="${p1.y - y0}" x2="${p2.x - x0}" y2="${p2.y - y0}" stroke="#333" stroke-width="2"${d.dashed ? ' stroke-dasharray="7 5"' : ""}${head === "end" || head === "both" ? ` marker-end="url(#m${no})"` : ""}${head === "start" || head === "both" ? ` marker-start="url(#m${no})"` : ""}/>`;
+                        } else if ((d.points || []).length > 1) {
+                            const hl = d.type === "highlight";
+                            svg += `<polyline points="${d.points.map((q) => Math.round(q.x - x0) + "," + Math.round(q.y - y0)).join(" ")}" fill="none" stroke="${escHtml(d.color || (hl ? "#ffe14d" : "#333"))}" stroke-width="${hl ? 14 : 3}" stroke-linecap="round" stroke-linejoin="round"${hl ? ' opacity=".4"' : ""}/>`;
+                        }
+                    });
+                    h = `<svg class="ar" width="${Math.round(bw)}" height="${Math.round(bh)}">${svg}</svg>` + h;
+                    (cv.pins || []).forEach((p, i) => {
+                        h += `<span class="pn" style="left:${Math.round(p.x - x0 - 12)}px;top:${Math.round(p.y - y0 - 12)}px;background:${PIN_COL[p.status === "done" ? "done" : p.type] || "#666"}">${i + 1}</span>`;
+                    });
+                    return `<div class="cvw" style="width:${Math.round(bw * s)}px;height:${Math.round(bh * s)}px"><div class="cvi" style="width:${Math.round(bw)}px;height:${Math.round(bh)}px;transform:scale(${s.toFixed(4)})">${h}</div></div>`;
+                }
+
+                function pinTable(cv) {
+                    if (!(cv.pins || []).length) return "";
+                    const rows = cv.pins
+                        .map((p, i) => {
+                            const comments = (p.comments || [])
+                                .filter((c) => c && c.text && c.text !== p.note)
+                                .map((c) => `<div class="cm">${escHtml(c.text)} <i>${escHtml([c.author, c.time].filter(Boolean).join(" · "))}</i></div>`)
+                                .join("");
+                            return `<tr><td><span class="pn s" style="background:${PIN_COL[p.status === "done" ? "done" : p.type] || "#666"}">${i + 1}</span></td><td>${escHtml(cap(p.type))}</td><td>${escHtml(p.sprint || "")}</td><td>${escHtml(cap(p.status || ""))}</td><td>${escHtml(p.note || "")}${comments}</td><td>${p.ado ? escHtml((p.ado.id || "") + (p.ado.status ? " · " + p.ado.status : "")) : ""}</td></tr>`;
+                        })
+                        .join("");
+                    return `<table><thead><tr><th>#</th><th>Type</th><th>Sprint</th><th>Status</th><th>Note</th><th>ADO</th></tr></thead><tbody>${rows}</tbody></table>`;
+                }
+
+                function walk(cv, p, depth) {
+                    const no = ++sectionNo;
+                    const id = secId(p);
+                    const trail = [];
+                    let cur = tree;
+                    p.slice(1).forEach((k) => {
+                        cur = cur.children[k];
+                        trail.push(cur.title);
+                    });
+                    const crumbs = [tree.title, ...trail].map(escHtml).join(" › ");
+                    toc.push(`<li style="margin-left:${depth * 18}px"><a href="#${id}">${escHtml(cv.title)}</a> <span>${(cv.pins || []).length} pin${(cv.pins || []).length === 1 ? "" : "s"}</span></li>`);
+                    sections.push(`<section id="${id}"><div class="crumbs">${crumbs}</div><h2>${escHtml(cv.title)}</h2>${canvasView(cv, no, p)}${pinTable(cv)}</section>`);
+                    orderedChildIds(cv).forEach((k) => walk(cv.children[k], [...p, k], depth + 1));
+                }
+                walk(tree, ["root"], 0);
+
+                const css = `*{box-sizing:border-box}body{margin:0;font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;color:#333;background:#f3f3f3}
+header,section{max-width:1180px;margin:24px auto;background:#fff;border:1px solid #e6e6e6;padding:28px 32px}
+h1{margin:0 0 4px;font-size:26px}h2{margin:2px 0 18px;font-size:22px}.sub{color:#777;font-size:13px}
+.toc{list-style:none;padding:0;margin:18px 0 0;font-size:14px;line-height:1.9}.toc span{color:#999;font-size:12px;margin-left:6px}
+a{color:#0a7dff;text-decoration:none}a:hover{text-decoration:underline}.crumbs{font-size:12px;color:#888}
+.cvw{position:relative;background:#f3f3f3 radial-gradient(#cfcfcf 1px,transparent 1px) 0 0/20px 20px;border:1px solid #e6e6e6;overflow:hidden;margin-bottom:20px}
+.cvi{position:absolute;left:0;top:0;transform-origin:0 0}.cvi>*{position:absolute}.ar{left:0;top:0;pointer-events:none;overflow:visible}
+.nd{background:#fff;border:1px solid #c8c8c8;border-radius:3px;overflow:hidden;box-shadow:0 6px 18px -8px rgba(20,18,12,.25)}
+.nh{height:28px;display:flex;align-items:center;gap:8px;padding:0 8px;background:#f7f7f7;font-weight:600;font-size:13px;border-bottom:1px solid #e6e6e6;white-space:nowrap;overflow:hidden}
+.nh b{font-size:11px;background:#eee;border-radius:9px;padding:1px 7px;font-weight:600}.nh b.live{background:#111;color:#52d69a}
+.nd img{display:block;width:100%;object-fit:cover}.ph{display:flex;align-items:center;justify-content:center;color:#aaa;font-size:12px;background:#fafafa}
+.nf{height:30px;display:flex;align-items:center;padding:0 8px;font-weight:700;font-size:13px;border-top:1px solid #e6e6e6}
+.fr{border:1.5px dashed #0a7dff;border-radius:6px;background:rgba(10,125,255,.04)}.fr span{position:absolute;top:-20px;left:0;font-size:12px;color:#0a7dff;font-weight:600}
+.tx{font-size:16px;line-height:1.35;padding:4px}.lk{background:#fff;border:1px solid #c8c8c8;border-radius:3px;padding:10px 12px;font-size:13px;overflow:hidden}.lk b{display:block;margin-bottom:3px}.lk a{font-size:11px;word-break:break-all}
+.pn{width:24px;height:24px;border-radius:50%;color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)}.pn.s{position:static;display:inline-flex;box-shadow:none;border:0}
+table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;color:#888;font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.06em}th,td{padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top}.cm{margin-top:4px;color:#666;font-size:12px}.cm i{color:#aaa}
+.empty{color:#999}@media print{body{background:#fff}header,section{border:0;margin:0 auto;padding:12px 0;page-break-after:always}}`;
+                const date = new Date().toLocaleString();
+                return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escHtml(tree.title)} — Envision export</title><style>${css}</style></head><body><header><h1>${escHtml(tree.title)}</h1><div class="sub">Envision export · ${escHtml(date)} · images embedded, works offline</div><ul class="toc">${toc.join("")}</ul></header>${sections.join("")}</body></html>`;
+            }
             function downloadBlob(content, type, name) {
                 const url = URL.createObjectURL(new Blob([content], { type }));
                 const a = document.createElement("a");
@@ -8077,6 +8212,14 @@
                             "text/markdown",
                             "sitemap-export.md",
                         );
+                        break;
+                    case "export-html":
+                        downloadBlob(
+                            buildExportHtml(),
+                            "text/html",
+                            "envision-export.html",
+                        );
+                        actionToast("Exported all canvases with images");
                         break;
                     case "export-json":
                         downloadBlob(
