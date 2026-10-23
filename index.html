@@ -3154,6 +3154,7 @@
             let cloudSaveTimer = null;
             let lastSavedJson = null;
             let saveRetryTimer = null;
+            let cloudLoaded = false;
             let savingSince = 0;
             let saveStateTimer = null;
             function setSaveState(state, detail) {
@@ -3177,13 +3178,13 @@
                               ? "Saved " + detail
                               : state === "error"
                                 ? "Couldn’t save — retrying"
-                                : "Local only — not saved";
+                                : "Not connected — changes aren’t saved";
                     el.title =
                         state === "saved"
                             ? "All changes saved to the cloud board"
                             : state === "error"
                               ? "Changes are kept in this browser and will retry"
-                              : "";
+                              : "Couldn’t reach the cloud board, so nothing is being saved. Refresh to reconnect.";
                 }, wait);
             }
             const saveTime = () =>
@@ -3393,7 +3394,9 @@
 
             function scheduleCloudSave() {
                 // Never write back a board we just received, or a view-only re-render
-                if (!sb || applyingRemote) return;
+                // cloudLoaded: until the real board has been read, the in-memory tree is
+                // only the sample board and must never be written over the cloud copy
+                if (!sb || !cloudLoaded || applyingRemote) return;
                 clearTimeout(cloudSaveTimer);
                 cloudSaveTimer = setTimeout(async () => {
                     cloudSaveTimer = null;
@@ -3507,16 +3510,33 @@
                         tree = await hydrateBoard(data.data);
                         if (!pathValid(path)) path = ["root"];
                     } else {
-                        rememberSaved(canon(tree));
-                        const error = await pushBoard();
-                        if (error) throw error;
+                        // No board row. Never seed over existing history: recover the
+                        // newest snapshot if there is one, else this is a first run.
+                        const snaps = await listSnapshots();
+                        if (snaps.length) {
+                            const latest = await sb
+                                .from("boards")
+                                .select("data")
+                                .eq("id", snaps[0].id)
+                                .maybeSingle();
+                            if (latest.error || !latest.data || !latest.data.data)
+                                throw latest.error || new Error("snapshot unreadable");
+                            tree = await hydrateBoard(latest.data.data);
+                            if (!pathValid(path)) path = ["root"];
+                        } else {
+                            rememberSaved(canon(tree));
+                            const error = await pushBoard();
+                            if (error) throw error;
+                        }
                     }
+                    cloudLoaded = true;
                 } catch (e) {
                     console.warn(
                         "Cloud sync failed to connect, falling back to local-only:",
                         e,
                     );
                     sb = null;
+                    cloudLoaded = false;
                 }
                 applyIcons();
                 render();
