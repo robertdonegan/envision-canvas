@@ -2077,6 +2077,12 @@
                 border-color: var(--p2-blue);
                 color: var(--ink);
             }
+            .smap-node.drop-before {
+                box-shadow: 0 -2px 0 0 var(--p2-blue);
+            }
+            .smap-node.drop-after {
+                box-shadow: 0 2px 0 0 var(--p2-blue);
+            }
             .smap-node.drop-target .smap-dot {
                 background: var(--p2-blue);
             }
@@ -7050,6 +7056,19 @@
                 if (localStorage.getItem("envision-map-open") === "1")
                     setMapOpen(true);
             } catch (e) {}
+            // Sibling order lives in an array (childOrder) because the cloud's jsonb
+            // column does not keep object key order
+            function orderedChildIds(cv) {
+                const ord = cv.childOrder || [];
+                const rank = (id, i) => {
+                    const k = ord.indexOf(id);
+                    return k < 0 ? 1e6 + i : k;
+                };
+                return Object.keys(cv.children || {})
+                    .map((id, i) => [id, rank(id, i)])
+                    .sort((a, b) => a[1] - b[1])
+                    .map((x) => x[0]);
+            }
             function buildSitemap() {
                 const container = document.getElementById("smapTree");
                 container.innerHTML = "";
@@ -7079,37 +7098,52 @@
                         row.addEventListener("dragend", () => {
                             smapDragPath = null;
                             container
-                                .querySelectorAll(".dragging,.drop-target")
+                                .querySelectorAll(".dragging,.drop-target,.drop-before,.drop-after")
                                 .forEach((el) =>
                                     el.classList.remove(
                                         "dragging",
                                         "drop-target",
+                                        "drop-before",
+                                        "drop-after",
                                     ),
                                 );
                         });
                     }
+                    const clearZones = () =>
+                        row.classList.remove("drop-target", "drop-before", "drop-after");
                     row.addEventListener("dragover", (e) => {
-                        if (!canMoveCanvas(smapDragPath, fullPath)) return;
+                        const zone = smapZone(e, row, fullPath);
+                        if (!zone) return;
                         e.preventDefault();
                         e.dataTransfer.dropEffect = "move";
-                        row.classList.add("drop-target");
+                        clearZones();
+                        row.classList.add(
+                            zone === "into" ? "drop-target" : "drop-" + zone,
+                        );
                     });
-                    row.addEventListener("dragleave", () =>
-                        row.classList.remove("drop-target"),
-                    );
+                    row.addEventListener("dragleave", clearZones);
                     row.addEventListener("drop", (e) => {
                         e.preventDefault();
-                        row.classList.remove("drop-target");
+                        const zone = smapZone(e, row, fullPath);
+                        clearZones();
                         const src = smapDragPath;
                         smapDragPath = null;
-                        if (canMoveCanvas(src, fullPath))
-                            moveCanvas(src, fullPath);
+                        if (!zone) return;
+                        if (zone === "into") return moveCanvas(src, fullPath);
+                        const parentPath = fullPath.slice(0, -1);
+                        const parent = getCanvas(parentPath);
+                        const ids = orderedChildIds(parent);
+                        const i = ids.indexOf(fullPath[fullPath.length - 1]);
+                        const beforeId = zone === "before" ? ids[i] : ids[i + 1] || null;
+                        if (samePath(parentPath, src.slice(0, -1)))
+                            reorderCanvas(src, beforeId);
+                        else moveCanvas(src, parentPath, beforeId);
                     });
                     const item = document.createElement("div");
                     item.className = "smap-item";
                     item.appendChild(row);
                     parentEl.appendChild(item);
-                    const kids = Object.values(node.children);
+                    const kids = orderedChildIds(node).map((id) => node.children[id]);
                     if (kids.length) {
                         const wrap = document.createElement("div");
                         wrap.className = "smap-children";
@@ -7131,9 +7165,39 @@
                     return false;
                 return !samePath(dest, src.slice(0, -1));
             }
+            // Where a dragged sitemap row would land: nest inside the row (middle),
+            // or become its sibling just above (top edge) / below (bottom edge)
+            function smapZone(e, row, targetPath) {
+                const src = smapDragPath;
+                if (!src) return null;
+                const r = row.getBoundingClientRect();
+                const f = (e.clientY - r.top) / (r.height || 1);
+                let zone = f < 0.28 ? "before" : f > 0.72 ? "after" : "into";
+                if (targetPath.length < 2) zone = "into";
+                if (zone === "into") return canMoveCanvas(src, targetPath) ? zone : null;
+                if (samePath(targetPath, src)) return null;
+                const parentPath = targetPath.slice(0, -1);
+                if (parentPath.length >= src.length && samePath(parentPath.slice(0, src.length), src))
+                    return null;
+                return zone;
+            }
+            function reorderCanvas(srcPath, beforeId) {
+                const parent = getCanvas(srcPath.slice(0, -1));
+                const srcId = srcPath[srcPath.length - 1];
+                const cur = orderedChildIds(parent);
+                const ids = cur.filter((i) => i !== srcId);
+                const at = beforeId ? ids.indexOf(beforeId) : -1;
+                if (at < 0) ids.push(srcId);
+                else ids.splice(at, 0, srcId);
+                if (ids.every((id, i) => id === cur[i])) return;
+                pushUndo();
+                parent.childOrder = ids;
+                render();
+                actionToast(`Moved “${parent.children[srcId].title}”`);
+            }
             // Re-parent a canvas: its link node moves from the old parent's
             // canvas to the new parent's, carrying all of its descendants.
-            function moveCanvas(srcPath, destPath) {
+            function moveCanvas(srcPath, destPath, beforeId) {
                 const srcId = srcPath[srcPath.length - 1];
                 const oldParent = getCanvas(srcPath.slice(0, -1));
                 const newParent = getCanvas(destPath);
@@ -7143,13 +7207,20 @@
                 const link = oldParent.nodes.find((n) => n.childId === srcId);
                 oldParent.nodes = oldParent.nodes.filter((n) => n !== link);
                 delete oldParent.children[srcId];
+                if (oldParent.childOrder)
+                    oldParent.childOrder = oldParent.childOrder.filter((i) => i !== srcId);
                 let newId = srcId;
                 if (newParent.children[newId])
                     newId = srcId + "-" + Date.now().toString(36);
                 moved.id = newId;
                 moved.parent = newParent.id;
                 Object.values(moved.children).forEach((c) => (c.parent = newId));
+                const siblings = orderedChildIds(newParent);
                 newParent.children[newId] = moved;
+                const at = beforeId ? siblings.indexOf(beforeId) : -1;
+                if (at < 0) siblings.push(newId);
+                else siblings.splice(at, 0, newId);
+                newParent.childOrder = siblings;
                 // No jump screen on the old parent: add a blank, titled one
                 // (same as a new screen) so an image can be uploaded to it.
                 const node = link || {
@@ -7571,8 +7642,8 @@
                 const seq = [];
                 function walk(node, p) {
                     node.nodes.forEach((n) => seq.push({ path: p, node: n }));
-                    Object.entries(node.children).forEach(([id, c]) =>
-                        walk(c, [...p, id]),
+                    orderedChildIds(node).forEach((id) =>
+                        walk(node.children[id], [...p, id]),
                     );
                 }
                 walk(tree, ["root"]);
@@ -7642,8 +7713,8 @@
                         (p) =>
                             (md += `${"  ".repeat(depth + 1)}- ${p.type[0].toUpperCase() + p.type.slice(1)} [${p.sprint}]${p.ado ? ` (${p.ado.id} · ${p.ado.status})` : ""}: ${p.note}\n`),
                     );
-                    Object.values(node.children).forEach((c) =>
-                        walk(c, depth + 1),
+                    orderedChildIds(node).forEach((id) =>
+                        walk(node.children[id], depth + 1),
                     );
                 }
                 walk(tree, 0);
