@@ -5037,8 +5037,18 @@
                         el.style.top = a.y + "px";
                         el.style.width = (a.w || 200) + "px";
                         el.style.height = (a.h || 150) + "px";
-                        el.innerHTML = `<div class="img-body">${a.thumb ? `<img src="${a.thumb}" alt="${a.label}" draggable="false">` : '<span class="img-empty">no image</span>'}</div><div class="img-foot"><span class="asset-label" title="Double-click to rename">${a.label || "Untitled asset"}</span><button class="img-upload" title="Upload image">${ADD_IMAGE_SVG}</button></div>`;
+                        el.innerHTML = `<div class="img-body">${a.thumb ? `<img src="${a.thumb}" alt="${a.label}" draggable="false">` : '<span class="img-empty">no image</span>'}</div><div class="img-foot"><span class="asset-label" title="Double-click to rename">${a.label || "Untitled asset"}</span><button class="img-upload" title="Upload image">${ADD_IMAGE_SVG}</button>${a.thumb ? `<button class="img-upload img-convert" title="Convert to jump screen">${ICONS.screenshot}</button>` : ""}</div>`;
                         const uploadBtn = el.querySelector(".img-upload");
+                        const convertBtn = el.querySelector(".img-convert");
+                        if (convertBtn) {
+                            convertBtn.addEventListener("pointerdown", (e) =>
+                                e.stopPropagation(),
+                            );
+                            convertBtn.addEventListener("click", (e) => {
+                                e.stopPropagation();
+                                convertImageToScreen(a);
+                            });
+                        }
                         uploadBtn.addEventListener("pointerdown", (e) =>
                             e.stopPropagation(),
                         );
@@ -5549,6 +5559,54 @@
                 if (!file || !imageUploadTarget) return;
                 loadImageFile(file, imageUploadTarget);
             });
+            // Turn an image asset into a jump screen (same picture, same place),
+            // re-pointing any connectors that were attached to it
+            function convertImageToScreen(a) {
+                const cv = getCanvas(path);
+                const idx = (cv.assets || []).indexOf(a);
+                if (idx < 0 || !a.thumb) return;
+                pushUndo();
+                const newId = "scr" + Date.now();
+                const label = a.label || "New Screen";
+                const w = a.w || 220;
+                const node = {
+                    id: newId,
+                    kind: "static",
+                    label,
+                    version: "v1",
+                    x: a.x,
+                    y: a.y,
+                    w,
+                    h: Math.max(60, (a.h || 150) - IMG_CHROME_H) + NODE_CHROME_H,
+                    thumb: a.thumb,
+                    versions: [{ label: "v1", thumb: a.thumb }],
+                    childId: newId,
+                };
+                cv.assets.splice(idx, 1);
+                cv.nodes.push(node);
+                cv.children[newId] = {
+                    id: newId,
+                    title: label,
+                    parent: cv.id,
+                    nodes: [],
+                    assets: [],
+                    pins: [],
+                    drawings: [],
+                    frames: [],
+                    children: {},
+                };
+                (cv.drawings || []).forEach((dr) =>
+                    ["startRef", "endRef"].forEach((k) => {
+                        if (dr[k] && dr[k].kind === "asset" && dr[k].id === a.id)
+                            dr[k] = { kind: "node", id: newId };
+                    }),
+                );
+                selectedData = null;
+                selectedEl = null;
+                multiSelected.clear();
+                render();
+                actionToast(`Converted “${label}” to a jump screen`);
+            }
             function loadImageFile(file, target) {
                 const reader = new FileReader();
                 reader.onload = () => {
