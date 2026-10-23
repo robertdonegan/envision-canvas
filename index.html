@@ -2355,6 +2355,34 @@
                 color: #fafafa;
                 margin-right: auto;
             }
+            #pinCard .pc-status {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                margin: 2px 0 8px;
+                padding: 6px 8px;
+                border: 1px solid var(--border);
+                border-radius: 2px;
+                font-size: 12px;
+                color: var(--ink-dim);
+            }
+            #pinCard .pc-status b {
+                font-weight: 600;
+                color: var(--ink);
+            }
+            #pinCard .pc-status.is-done {
+                background: #e8f7ef;
+                border-color: #b7e4cb;
+            }
+            #pinCard .pc-status.is-done b {
+                color: #0a7a47;
+            }
+            #pinCard .pc-status .pc-btn {
+                height: 26px;
+                padding: 0 10px;
+                font-size: 12px;
+            }
             .pc-btn.danger:hover {
                 background: #b52c46;
                 border-color: #b52c46;
@@ -3169,6 +3197,10 @@
                 </div>
                 <div id="pcAdoLinkBtn" class="ado-link-btn" data-ui-icon="attach">
                     Link an Azure DevOps story
+                </div>
+                <div class="pc-status" id="pcStatusRow" style="display: none">
+                    <span>Status: <b id="pcStatusText">Open</b></span>
+                    <div class="pc-btn" id="pcDone">Mark as done</div>
                 </div>
                 <div class="pc-actions">
                     <div
@@ -6188,6 +6220,22 @@
                     adoBtn.style.display = "flex";
                 }
             }
+            function refreshStatusRow(p) {
+                const row = document.getElementById("pcStatusRow");
+                if (!p) {
+                    row.style.display = "none";
+                    return;
+                }
+                const done = p.status === "done";
+                row.style.display = "flex";
+                row.classList.toggle("is-done", done);
+                document.getElementById("pcStatusText").textContent = done
+                    ? "Done"
+                    : "Open";
+                document.getElementById("pcDone").textContent = done
+                    ? "Reopen"
+                    : "Mark as done";
+            }
             function pinCardDirty() {
                 const ex = pendingPin && pendingPin.existing;
                 if (!ex) return true;
@@ -6222,6 +6270,7 @@
                     "flex";
                 renderThread(p);
                 refreshAdoBlock(p.ado);
+                refreshStatusRow(p);
                 openCardAt(clientX, clientY);
             }
             function openCardAt(clientX, clientY) {
@@ -6283,6 +6332,21 @@
             pcClose.addEventListener("click", () =>
                 pinCard.classList.remove("open"),
             );
+            document.getElementById("pcDone").onclick = () => {
+                const p = pendingPin && pendingPin.existing;
+                if (!p) return;
+                pushUndo();
+                if (p.status === "done") {
+                    p.status = "open";
+                    delete p.doneAt;
+                } else {
+                    p.status = "done";
+                    p.doneAt = new Date().toISOString();
+                }
+                refreshStatusRow(p);
+                render();
+                actionToast(p.status === "done" ? "Pin marked as done" : "Pin reopened");
+            };
             document.getElementById("pcDeletePin").onclick = () => {
                 if (!pendingPin || !pendingPin.existing) return;
                 if (
@@ -6709,6 +6773,7 @@
                 document.getElementById("pcAdoBlock").style.display = "none";
                 document.getElementById("pcAdoLinkBtn").style.display = "flex";
                 document.getElementById("pcDeletePin").style.display = "none";
+                refreshStatusRow(null);
                 openCardAt(e.clientX, e.clientY);
             });
 
