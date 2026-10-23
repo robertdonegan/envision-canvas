@@ -4937,6 +4937,22 @@
                             e.stopPropagation();
                             openImagePicker(a);
                         });
+                        // Match the card to the picture's aspect so object-fit: cover
+                        // never crops it (also repairs cards sized before this fix)
+                        const picEl = el.querySelector(".img-body img");
+                        if (picEl) {
+                            const fitCard = () => {
+                                if (!picEl.naturalWidth) return;
+                                const want = Math.round(((a.w || 200) - 2) * (picEl.naturalHeight / picEl.naturalWidth)) + IMG_CHROME_H;
+                                if (Math.abs(want - (a.h || 0)) > 2) {
+                                    a.h = want;
+                                    el.style.height = want + "px";
+                                    scheduleCloudSave();
+                                }
+                            };
+                            if (picEl.complete) fitCard();
+                            else picEl.addEventListener("load", fitCard);
+                        }
                         const imgLabelEl = el.querySelector(".asset-label");
                         imgLabelEl.addEventListener("pointerdown", (e) =>
                             e.stopPropagation(),
@@ -5395,6 +5411,7 @@
                 if (e.target && e.target.tagName === "IMG") e.preventDefault();
             });
             const NODE_CHROME_H = 28; // top bar only
+            const IMG_CHROME_H = 32; // 30px footer + 2px card border
             function openImagePicker(node) {
                 imageUploadTarget = node;
                 imgFileInput.value = "";
@@ -5445,25 +5462,10 @@
                             });
                         } else {
                             const ratio = img.naturalHeight / img.naturalWidth;
-                            const longSide = 220,
-                                pad = 1;
-                            let dispW, dispH;
-                            if (ratio <= 1) {
-                                dispW = longSide;
-                                dispH = longSide * ratio;
-                            } else {
-                                dispH = longSide;
-                                dispW = longSide / ratio;
-                            }
-                            target.w = Math.max(
-                                120,
-                                Math.min(420, Math.round(dispW / pad)),
-                            );
-                            target.h =
-                                Math.max(
-                                    110,
-                                    Math.min(420, Math.round(dispH / pad)),
-                                ) + 20;
+                            const longSide = 220;
+                            const dispW = ratio <= 1 ? longSide : longSide / ratio;
+                            target.w = Math.max(120, Math.min(420, Math.round(dispW)));
+                            target.h = Math.round((target.w - 2) * ratio) + IMG_CHROME_H;
                         }
                         render();
                     };
