@@ -577,7 +577,7 @@
                 --legend-w: 0px;
             }
             body.map-open {
-                --map-w: var(--legend-w-base);
+                --map-w: var(--map-w-user, var(--legend-w-base));
             }
             body.legend-hidden #overlayPanel {
                 display: none;
@@ -1979,6 +1979,39 @@
             body.map-open #sitemap {
                 display: block;
             }
+            #sitemapResize {
+                position: absolute;
+                top: 56px;
+                bottom: 0;
+                right: calc(var(--map-w) - 4px);
+                width: 8px;
+                z-index: 56;
+                cursor: col-resize;
+                touch-action: none;
+                display: none;
+            }
+            body.map-open #sitemapResize {
+                display: block;
+            }
+            #sitemapResize::after {
+                content: "";
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 3px;
+                width: 2px;
+                background: var(--brand, #0a7dff);
+                opacity: 0;
+                transition: opacity 0.15s;
+            }
+            #sitemapResize:hover::after,
+            body.map-resizing #sitemapResize::after {
+                opacity: 1;
+            }
+            body.map-resizing {
+                cursor: col-resize;
+                user-select: none;
+            }
             #sitemap h2 {
                 font-family: var(--mono);
                 font-size: 12px;
@@ -2059,8 +2092,16 @@
                 background: var(--ink-faint);
                 flex-shrink: 0;
             }
-            .smap-node.active .smap-dot {
+            .smap-node .smap-dot.live {
                 background: var(--green);
+            }
+            .smap-node .smap-dot.frozen {
+                background: transparent;
+                box-shadow: inset 0 0 0 1.5px var(--ink-faint);
+            }
+            .smap-node .smap-dot.root {
+                background: var(--ink-dim);
+                border-radius: 2px;
             }
             .smap-title {
                 min-width: 0;
@@ -2956,6 +2997,8 @@
                 <h2>Sitemap</h2>
                 <div class="smap-tree" id="smapTree"></div>
             </aside>
+
+            <div id="sitemapResize" title="Drag to resize sitemap" aria-hidden="true"></div>
 
             <div id="pinCard">
                 <div class="pc-drag" id="pcDrag" title="Drag to move">
@@ -6947,9 +6990,12 @@
                     setLegendOpen(false);
             } catch (e) {}
             try {
-                if (localStorage.getItem("envision-pin-labels") === "0")
+                // labels are off unless the user has switched them on
+                if (localStorage.getItem("envision-pin-labels") !== "1")
                     document.body.classList.add("hide-pin-labels");
-            } catch (e) {}
+            } catch (e) {
+                document.body.classList.add("hide-pin-labels");
+            }
             function setMapOpen(open) {
                 document.body.classList.toggle("map-open", open);
                 const btn = document.getElementById("mapBtn");
@@ -6960,6 +7006,42 @@
                     localStorage.setItem("envision-map-open", open ? "1" : "0");
                 } catch (e) {}
             }
+            {
+                const MAP_MIN = 232;
+                const clampMapW = (w) =>
+                    Math.round(Math.max(MAP_MIN, Math.min(w, Math.min(720, innerWidth * 0.6))));
+                const setMapW = (w) =>
+                    document.documentElement.style.setProperty("--map-w-user", clampMapW(w) + "px");
+                try {
+                    const saved = parseInt(localStorage.getItem("envision-map-w"), 10);
+                    if (saved) setMapW(saved);
+                } catch (e) {}
+                const grip = document.getElementById("sitemapResize");
+                grip.addEventListener("pointerdown", (e) => {
+                    e.preventDefault();
+                    grip.setPointerCapture(e.pointerId);
+                    document.body.classList.add("map-resizing");
+                    const move = (ev) => setMapW(innerWidth - ev.clientX);
+                    const up = () => {
+                        grip.removeEventListener("pointermove", move);
+                        grip.removeEventListener("pointerup", up);
+                        grip.removeEventListener("pointercancel", up);
+                        document.body.classList.remove("map-resizing");
+                        try {
+                            localStorage.setItem("envision-map-w", String(clampMapW(document.getElementById("sitemap").offsetWidth)));
+                        } catch (e) {}
+                    };
+                    grip.addEventListener("pointermove", move);
+                    grip.addEventListener("pointerup", up);
+                    grip.addEventListener("pointercancel", up);
+                });
+                grip.addEventListener("dblclick", () => {
+                    document.documentElement.style.removeProperty("--map-w-user");
+                    try {
+                        localStorage.removeItem("envision-map-w");
+                    } catch (e) {}
+                });
+            }
             document.getElementById("mapBtn").onclick = () =>
                 setMapOpen(!document.body.classList.contains("map-open"));
             try {
@@ -6969,7 +7051,7 @@
             function buildSitemap() {
                 const container = document.getElementById("smapTree");
                 container.innerHTML = "";
-                function walk(node, depth, parentPath, parentEl) {
+                function walk(node, depth, parentPath, parentEl, link) {
                     const fullPath = [...parentPath, node.id];
                     const row = document.createElement("div");
                     row.className =
@@ -6977,7 +7059,9 @@
                         (samePath(fullPath, path) ? " active" : "");
                     const childCount = Object.keys(node.children).length,
                         pinCount = node.pins.length;
-                    row.innerHTML = `<span class="smap-dot"></span><span class="smap-title">${node.title}</span><span class="smap-meta" title="${childCount ? childCount + (childCount === 1 ? " screen" : " screens") + " · " : ""}${pinCount} pin${pinCount === 1 ? "" : "s"}">${pinCount} pin${pinCount === 1 ? "" : "s"}</span>`;
+                    const dotKind = link ? (link.kind === "live" ? "live" : "frozen") : "root";
+                    const dotTip = { live: "Live screen", frozen: "Frozen screen", root: "Top-level canvas" }[dotKind];
+                    row.innerHTML = `<span class="smap-dot ${dotKind}" title="${dotTip}"></span><span class="smap-title">${node.title}</span><span class="smap-meta" title="${childCount ? childCount + (childCount === 1 ? " screen" : " screens") + " · " : ""}${pinCount} pin${pinCount === 1 ? "" : "s"}">${pinCount} pin${pinCount === 1 ? "" : "s"}</span>`;
                     row.onclick = () => {
                         path = fullPath;
                         render();
@@ -7028,7 +7112,9 @@
                         const wrap = document.createElement("div");
                         wrap.className = "smap-children";
                         item.appendChild(wrap);
-                        kids.forEach((c) => walk(c, depth + 1, fullPath, wrap));
+                        kids.forEach((c) =>
+                            walk(c, depth + 1, fullPath, wrap, node.nodes.find((n) => n.childId === c.id)),
+                        );
                     }
                 }
                 walk(tree, 0, [], container);
