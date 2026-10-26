@@ -1880,8 +1880,8 @@
                 color: rgba(255, 255, 255, 0.7);
             }
             .tc-name {
-                font-size: 10px;
-                line-height: 12px;
+                font-size: 5.625px;
+                line-height: 6.75px;
                 font-weight: 700;
                 opacity: 0.75;
                 margin-bottom: 2px;
@@ -2149,6 +2149,35 @@
             }
             .pin.done {
                 background: var(--pin-done);
+            }
+            /* marching ants: a dashed ring that circles pins someone has checked out */
+            .pin.inprogress {
+                position: relative;
+                --ring: var(--pc, var(--pin-feature));
+            }
+            .pin.inprogress.bug { --ring: var(--pc, var(--pin-bug)); }
+            .pin.inprogress.observation { --ring: var(--pc, var(--pin-observation)); }
+            .pin.inprogress.idea { --ring: var(--pc, var(--pin-idea)); }
+            .pin.inprogress.question { --ring: var(--pc, var(--pin-question)); }
+            .pin.inprogress.risk { --ring: var(--pc, var(--pin-risk)); }
+            .pin.inprogress::after {
+                content: "";
+                position: absolute;
+                inset: -7px;
+                border: 2px dashed var(--ring);
+                border-radius: 50%;
+                pointer-events: none;
+                animation: pinAnts 5s linear infinite;
+            }
+            @keyframes pinAnts {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .pin.inprogress::after {
+                    animation: none;
+                }
             }
 
             .sticky {
@@ -2788,6 +2817,21 @@
                 font-weight: 600;
                 color: var(--ink);
             }
+            #pinCard .pc-status {
+                flex-wrap: wrap;
+            }
+            #pinCard .pc-status-btns {
+                display: flex;
+                gap: 6px;
+                margin-left: auto;
+            }
+            #pinCard .pc-status.is-progress {
+                background: var(--blue-soft);
+                border-color: #b9d6fb;
+            }
+            #pinCard .pc-status.is-progress b {
+                color: var(--brand, #0a7dff);
+            }
             #pinCard .pc-status.is-done {
                 background: #e8f7ef;
                 border-color: #b7e4cb;
@@ -2804,10 +2848,19 @@
                 background: #b52c46;
                 border-color: #b52c46;
             }
+            /* newest comment sits at the bottom; older ones scroll away above */
             #pcThread {
-                max-height: 120px;
+                max-height: 150px;
                 overflow-y: auto;
                 margin-bottom: 8px;
+                display: flex;
+                flex-direction: column;
+            }
+            #pcThread > :first-child {
+                margin-top: auto;
+            }
+            #pcThread > .pc-comment {
+                flex-shrink: 0;
             }
             .pc-comment {
                 padding: 7px 9px;
@@ -2954,10 +3007,28 @@
                 border-color: var(--border-strong);
                 color: var(--ink);
             }
-            #pcAddCommentRow {
+            #pcCompose {
                 display: flex;
-                justify-content: flex-end;
-                margin: -2px 0 10px;
+                align-items: flex-end;
+                gap: 6px;
+                margin-bottom: 8px;
+            }
+            #pinCard #pcCompose textarea {
+                flex: 1;
+                min-width: 0;
+                margin-bottom: 0;
+            }
+            #pcCompose.inline textarea {
+                height: 32px;
+            }
+            #pcAddComment {
+                width: 32px;
+                padding: 0;
+                flex-shrink: 0;
+            }
+            #pcAddComment svg {
+                width: 16px;
+                height: 16px;
             }
             .ado-link-btn {
                 margin-top: 7px;
@@ -3583,8 +3654,8 @@
                         <label>Type</label>
                         <select id="pcType">
                             <option value="bug">Bug</option>
-                            <option value="feature">Feature</option>
                             <option value="observation">Observation</option>
+                            <option value="feature">Feature</option>
                             <option value="idea">Idea</option>
                             <option value="question">Question</option>
                             <option value="risk">Risk</option>
@@ -3597,12 +3668,21 @@
                 </div>
                 <label id="pcNoteLabel">Note</label>
                 <div id="pcThread"></div>
-                <textarea
-                    id="pcNote"
-                    placeholder="Describe what's wrong or proposed…"
-                ></textarea>
-                <div id="pcAddCommentRow" style="display: none">
-                    <div class="pc-btn" id="pcAddComment" data-ui-icon="message">Add comment</div>
+                <div id="pcCompose">
+                    <textarea
+                        id="pcNote"
+                        placeholder="Describe what's wrong or proposed…"
+                    ></textarea>
+                    <div id="pcAddCommentRow" style="display: none">
+                        <div
+                            class="pc-btn"
+                            id="pcAddComment"
+                            data-ui-icon="message"
+                            role="button"
+                            title="Add comment"
+                            aria-label="Add comment"
+                        ></div>
+                    </div>
                 </div>
                 <div id="pcAdoBlock" class="ado-block" style="display: none">
                     <div class="ado-row">
@@ -3636,7 +3716,10 @@
                 </div>
                 <div class="pc-status" id="pcStatusRow" style="display: none">
                     <span>Status: <b id="pcStatusText">Open</b></span>
-                    <div class="pc-btn" id="pcDone">Mark as done</div>
+                    <div class="pc-status-btns">
+                        <div class="pc-btn" id="pcCheckout">Check out</div>
+                        <div class="pc-btn" id="pcDone">Mark as done</div>
+                    </div>
                 </div>
                 <div class="pc-actions">
                     <div
@@ -4056,7 +4139,15 @@
             }
             // Pins and frames had no ids, so they can't be matched across clients.
             // The id is derived from the content, so every client assigns the same one.
+            const RETIRED_SPRINTS = ["Sprint 14", "Sprint 15", "Sprint 16"];
             function ensureStableIds(node) {
+                // Retired sprints fold into Sprint 112
+                if (Array.isArray(node.sprints))
+                    node.sprints = node.sprints.filter((n) => !RETIRED_SPRINTS.includes(n));
+                (node.pins || []).forEach((p) => {
+                    if (p && RETIRED_SPRINTS.includes(p.sprint))
+                        p.sprint = "Sprint 112";
+                });
                 ["pins", "frames"].forEach((k) => {
                     const arr = node[k];
                     if (!Array.isArray(arr)) return;
@@ -4396,7 +4487,7 @@
             };
 
             /* ---------- Text box styling + sanitiser ---------- */
-            const TEXT_SIZES = { s: 12, m: 13.5, l: 18, xl: 26 };
+            const TEXT_SIZES = { xs: 6.75, s: 12, m: 13.5, l: 18, xl: 26 };
             const TEXT_COLORS = ["#333333", "#ffffff", "#ff465f", "#ff6100", "#12b76a", "#0a7dff", "#231edc", "#8a3ffc"];
             const TEXT_FILLS = ["none", "#ffffff", "#ff465f", "#0a7dff", "#231edc", "#8a3ffc", "#ff6100", "#12b76a", "#fff6c2"];
             const TEXT_ALIGNS = ["left", "center", "right"];
@@ -4631,7 +4722,7 @@
                         y: 300,
                         type: "bug",
                         status: "open",
-                        sprint: "Sprint 15",
+                        sprint: "Sprint 112",
                         note: "Date filter resets on refresh",
                     },
                     {
@@ -4639,7 +4730,7 @@
                         y: 300,
                         type: "feature",
                         status: "open",
-                        sprint: "Sprint 16",
+                        sprint: "Sprint 112",
                         note: "Add saved-view dropdown",
                     },
                 ],
@@ -4670,7 +4761,7 @@
                         y: 160,
                         type: "feature",
                         status: "done",
-                        sprint: "Sprint 14",
+                        sprint: "Sprint 112",
                         note: "Dark mode toggle — shipped",
                     },
                 ],
@@ -4712,7 +4803,7 @@
                         y: 280,
                         type: "bug",
                         status: "open",
-                        sprint: "Sprint 15",
+                        sprint: "Sprint 112",
                         note: "Invite emails not localized",
                     },
                 ],
@@ -4752,7 +4843,7 @@
                         y: 160,
                         type: "bug",
                         status: "open",
-                        sprint: "Sprint 15",
+                        sprint: "Sprint 112",
                         note: "CSV export missing currency symbol",
                         ado: {
                             id: "AB#4471",
@@ -4765,7 +4856,7 @@
                         y: 260,
                         type: "feature",
                         status: "open",
-                        sprint: "Sprint 16",
+                        sprint: "Sprint 112",
                         note: 'Add "schedule export" option',
                     },
                     {
@@ -4773,7 +4864,7 @@
                         y: 330,
                         type: "bug",
                         status: "done",
-                        sprint: "Sprint 14",
+                        sprint: "Sprint 112",
                         note: "Modal close button — fixed",
                     },
                 ],
@@ -4792,7 +4883,7 @@
                         y: 160,
                         type: "feature",
                         status: "open",
-                        sprint: "Sprint 16",
+                        sprint: "Sprint 112",
                         note: "Multi-select for region filter",
                     },
                 ],
@@ -4849,7 +4940,7 @@
                         y: 200,
                         type: "bug",
                         status: "open",
-                        sprint: "Sprint 15",
+                        sprint: "Sprint 112",
                         note: "Invite emails not localized (same as parent flag)",
                     },
                 ],
@@ -4915,9 +5006,26 @@
                 return v + DRAW_MARGIN;
             }
             let currentTool = "select";
-            let overlayMode = "type"; // 'type' | 'sprint' | 'status'
+            let overlayMode = "type"; // 'type' | 'sprint' | 'status' | 'user' | 'owner'
             let overlayFocus = null; // { mode, key } — only this group stays emphasised
+            // Everyone who has commented on a pin, original poster first.
+            // "You" is legacy data from before names existed, so it's ignored.
+            function pinAuthors(p) {
+                const a = [];
+                (p.comments || []).forEach((c) => {
+                    const n = (c.author || "").trim();
+                    if (n && n !== "You" && !a.includes(n)) a.push(n);
+                });
+                return a;
+            }
+            function pinMatchesKey(p, mode, key) {
+                return mode === "user"
+                    ? pinAuthors(p).includes(key)
+                    : pinOverlayKey(p, mode) === key;
+            }
             function pinOverlayKey(p, mode) {
+                if (mode === "user") return pinAuthors(p)[0] || "";
+                if (mode === "owner") return p.owner || "Not checked out";
                 if (mode === "type") return p.status === "done" ? "done" : p.type;
                 if (mode === "sprint") return p.sprint;
                 return p.ado
@@ -5222,8 +5330,11 @@
                 question: "<svg viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1C11.866 1 15 4.13401 15 8ZM8.75 12.25C8.75 12.6642 8.41421 13 8 13C7.58579 13 7.25 12.6642 7.25 12.25C7.25 11.8358 7.58579 11.5 8 11.5C8.41421 11.5 8.75 11.8358 8.75 12.25ZM9.36472 3.91603C8.50973 3.42746 7.45209 3.46389 6.63274 4.01012L6.08397 4.37596C5.73933 4.60573 5.6462 5.07138 5.87596 5.41603C6.10573 5.76067 6.57138 5.8538 6.91603 5.62404L7.46479 5.2582C7.8114 5.02712 8.25882 5.01171 8.62051 5.21839C9.31697 5.61637 9.36684 6.60201 8.7141 7.06825L7.56407 7.8897C7.36697 8.03048 7.25 8.25779 7.25 8.5V9.5C7.25 9.91421 7.58579 10.25 8 10.25C8.41421 10.25 8.75 9.91421 8.75 9.5V8.88596L9.58596 8.28885C11.129 7.18671 11.0111 4.8568 9.36472 3.91603Z\" fill=\"currentColor\"/></svg>",
                 risk: "<svg viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M1 8C1 4.13401 4.13401 0.999999 8 0.999999C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8ZM7.25 10.75C7.25 10.3358 7.58579 10 8 10C8.41421 10 8.75 10.3358 8.75 10.75C8.75 11.1642 8.41421 11.5 8 11.5C7.58579 11.5 7.25 11.1642 7.25 10.75ZM7.25 8C7.25 8.41421 7.58579 8.75 8 8.75C8.41421 8.75 8.75 8.41421 8.75 8L8.75 5C8.75 4.58579 8.41421 4.25 8 4.25C7.58579 4.25 7.25 4.58579 7.25 5L7.25 8Z\" fill=\"currentColor\"/></svg>",
             };
+            const PIN_GLYPH_PROGRESS = "<svg viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"M7.5 1.25C11.2279 1.25 14.25 4.27208 14.25 8C14.25 11.7279 11.2279 14.75 7.5 14.75C3.77208 14.75 0.75 11.7279 0.75 8C0.75 4.27208 3.77208 1.25 7.5 1.25ZM7.5 2.75C4.60051 2.75 2.25 5.10051 2.25 8C2.25 10.8995 4.60051 13.25 7.5 13.25C10.3995 13.25 12.75 10.8995 12.75 8C12.75 5.10051 10.3995 2.75 7.5 2.75ZM8.31055 4.18262C8.60926 4.12494 8.75888 4.188 9.05762 4.31445C10.4927 4.92192 11.5 6.34353 11.5 8C11.5 9.65647 10.4927 11.0781 9.05762 11.6855C8.75888 11.812 8.60926 11.8751 8.31055 11.8174C8.10321 11.7773 7.78765 11.5679 7.66992 11.3926C7.50032 11.1399 7.5 10.8934 7.5 10.4004V5.59961C7.5 5.10661 7.50032 4.86015 7.66992 4.60742C7.78765 4.43211 8.10321 4.2227 8.31055 4.18262Z\" fill=\"currentColor\"/>\n</svg>";
             function pinGlyph(p) {
-                return p.status === "done" ? PIN_GLYPHS.done : PIN_GLYPHS[p.type] || "•";
+                if (p.status === "done") return PIN_GLYPHS.done;
+                if (p.owner) return PIN_GLYPH_PROGRESS;
+                return PIN_GLYPHS[p.type] || "•";
             }
 
             function getRectForRef(cv, ref) {
@@ -5957,9 +6068,13 @@
                     el.className =
                         "pin " +
                         pinColor(p.type, p.status) +
+                        (p.owner && p.status !== "done" ? " inprogress" : "") +
                         (multiSelected.has(p) ? " multi-selected" : "");
                     el.innerHTML = pinGlyph(p);
-                    el.title = p.note;
+                    el.title =
+                        p.owner && p.status !== "done"
+                            ? `${p.note} (in progress: ${p.owner})`
+                            : p.note;
                     if (overlayMode !== "type") {
                         el.style.background = overlayColor(
                             pinOverlayKey(p, overlayMode),
@@ -5968,7 +6083,7 @@
                     }
                     if (
                         overlayFocus &&
-                        pinOverlayKey(p, overlayFocus.mode) !== overlayFocus.key
+                        !pinMatchesKey(p, overlayFocus.mode, overlayFocus.key)
                     )
                         group.classList.add("pin-dim");
                     attachPinDrag(el, p);
@@ -5977,12 +6092,18 @@
 
                     const chip = document.createElement("div");
                     chip.className = "sprintchip";
-                    const typeLabel =
-                        p.type.charAt(0).toUpperCase() + p.type.slice(1);
                     const adoHtml = p.ado
-                        ? ` · <a href="${p.ado.url || "#"}" target="_blank" rel="noopener" class="chip-ado-link">#${p.ado.id.replace("#", "")}</a>`
+                        ? `<a href="${p.ado.url || "#"}" target="_blank" rel="noopener" class="chip-ado-link">#${p.ado.id.replace("#", "")}</a>`
                         : "";
-                    chip.innerHTML = `${typeLabel} · ${p.sprint}${adoHtml}`;
+                    chip.innerHTML = [
+                        p.sprint ? escHtml(p.sprint) : "",
+                        p.owner && p.status !== "done"
+                            ? `In progress: ${escHtml(p.owner)}`
+                            : "",
+                        adoHtml,
+                    ]
+                        .filter(Boolean)
+                        .join(" · ");
                     group.appendChild(chip);
                     nodesLayer.appendChild(group);
                 });
@@ -7079,7 +7200,10 @@
             /* ============================================================ PIN CARD ============================================================ */
             const pinCard = document.getElementById("pinCard");
             let pendingPin = null;
-            const DEFAULT_SPRINTS = ["Sprint 15", "Sprint 16", "Backlog"];
+            const DEFAULT_SPRINTS = [
+                ...Array.from({ length: 9 }, (_, i) => "Sprint " + (112 + i)),
+                "Backlog",
+            ];
             // Defaults + sprints added by users (saved on the board) + any already used by pins
             function getSprints() {
                 const list = [...DEFAULT_SPRINTS];
@@ -7113,7 +7237,11 @@
                         const name = (
                             prompt(
                                 "New sprint name:",
-                                "Sprint " + (sprintsList.length + 15),
+                                "Sprint " +
+                                    (Math.max(
+                                        111,
+                                        ...sprintsList.map((n) => +(/^Sprint (\d+)$/.exec(n) || [])[1] || 0),
+                                    ) + 1),
                             ) || ""
                         ).trim();
                         if (name && !sprintsList.includes(name)) {
@@ -7239,11 +7367,18 @@
                     return;
                 }
                 const done = p.status === "done";
+                const mine = !!p.owner && p.owner === currentAuthor();
                 row.style.display = "flex";
                 row.classList.toggle("is-done", done);
+                row.classList.toggle("is-progress", !done && !!p.owner);
                 document.getElementById("pcStatusText").textContent = done
                     ? "Done"
-                    : "Open";
+                    : p.owner
+                      ? "In progress · " + p.owner
+                      : "Open";
+                const co = document.getElementById("pcCheckout");
+                co.style.display = done ? "none" : "";
+                co.textContent = !p.owner ? "Check out" : mine ? "Release" : "Take over";
                 document.getElementById("pcDone").textContent = done
                     ? "Reopen"
                     : "Mark as done";
@@ -7280,10 +7415,13 @@
                     "Add a comment to this thread…";
                 document.getElementById("pcAddCommentRow").style.display =
                     "flex";
+                document.getElementById("pcCompose").classList.add("inline");
                 renderThread(p);
                 refreshAdoBlock(p.ado);
                 refreshStatusRow(p);
                 openCardAt(clientX, clientY);
+                const th = document.getElementById("pcThread");
+                th.scrollTop = th.scrollHeight;
             }
             function openCardAt(clientX, clientY) {
                 pinCard.style.left =
@@ -7354,10 +7492,28 @@
                 } else {
                     p.status = "done";
                     p.doneAt = new Date().toISOString();
+                    delete p.owner;
+                    delete p.claimedAt;
                 }
                 refreshStatusRow(p);
                 render();
                 actionToast(p.status === "done" ? "Pin marked as done" : "Pin reopened");
+            };
+            document.getElementById("pcCheckout").onclick = () => {
+                const p = pendingPin && pendingPin.existing;
+                if (!p || p.status === "done") return;
+                const me = currentAuthor();
+                pushUndo();
+                if (p.owner === me) {
+                    delete p.owner;
+                    delete p.claimedAt;
+                } else {
+                    p.owner = me;
+                    p.claimedAt = new Date().toISOString();
+                }
+                refreshStatusRow(p);
+                render();
+                actionToast(p.owner ? "Pin checked out to you" : "Pin released");
             };
             document.getElementById("pcDeletePin").onclick = () => {
                 if (!pendingPin || !pendingPin.existing) return;
@@ -7375,6 +7531,17 @@
                 pendingPin = null;
                 render();
             };
+            document.getElementById("pcNote").addEventListener("keydown", (e) => {
+                if (
+                    e.key === "Enter" &&
+                    !e.shiftKey &&
+                    pendingPin &&
+                    pendingPin.existing
+                ) {
+                    e.preventDefault();
+                    document.getElementById("pcAddComment").click();
+                }
+            });
             document.getElementById("pcAddComment").onclick = () => {
                 if (!pendingPin || !pendingPin.existing) return;
                 const text = document.getElementById("pcNote").value.trim();
@@ -7797,8 +7964,8 @@
             function openNewPin(clientX, clientY) {
                 const pt = screenToCanvas(clientX, clientY);
                 pendingPin = { x: pt.x, y: pt.y, mode: "new" };
-                document.getElementById("pcType").value = "feature";
-                populateSprintSelect("Sprint 16");
+                document.getElementById("pcType").value = "bug";
+                populateSprintSelect("Sprint 112");
                 document.getElementById("pcNoteLabel").textContent = "Note";
                 document.getElementById("pcNote").placeholder =
                     "Describe what's wrong or proposed…";
@@ -7806,6 +7973,7 @@
                 document.getElementById("pcThread").innerHTML = "";
                 document.getElementById("pcAddCommentRow").style.display =
                     "none";
+                document.getElementById("pcCompose").classList.remove("inline");
                 document.getElementById("pcAdoBlock").style.display = "none";
                 document.getElementById("pcAdoLinkBtn").style.display = "flex";
                 document.getElementById("pcDeletePin").style.display = "none";
@@ -8542,6 +8710,7 @@
             const overlayColorCache = {};
             function overlayColor(key) {
                 key = key || "—";
+                if (key === "Not checked out") return "#9aa0a6";
                 if (!overlayColorCache[key]) {
                     let h = 0;
                     for (let i = 0; i < key.length; i++)
@@ -8552,7 +8721,11 @@
                 return overlayColorCache[key];
             }
             function collectOverlayKeys(node, mode, set) {
-                node.pins.forEach((p) => set.add(pinOverlayKey(p, mode)));
+                node.pins.forEach((p) =>
+                    mode === "user"
+                        ? pinAuthors(p).forEach((n) => set.add(n))
+                        : set.add(pinOverlayKey(p, mode)),
+                );
                 Object.values(node.children).forEach((c) =>
                     collectOverlayKeys(c, mode, set),
                 );
@@ -8576,9 +8749,12 @@
                 const legend = document.getElementById("overlayLegend");
                 const counts = {};
                 visiblePins.forEach((p) =>
-                    ["type", "sprint", "status"].forEach((m) => {
-                        const id = m + "\u0000" + pinOverlayKey(p, m);
-                        counts[id] = (counts[id] || 0) + 1;
+                    ["type", "sprint", "status", "user", "owner"].forEach((m) => {
+                        const keys = m === "user" ? pinAuthors(p) : [pinOverlayKey(p, m)];
+                        keys.forEach((k) => {
+                            const id = m + "\u0000" + k;
+                            counts[id] = (counts[id] || 0) + 1;
+                        });
                     }),
                 );
                 const row = (mode, key, swatch, label) =>
@@ -8599,6 +8775,8 @@
                     ["type", "By type"],
                     ["sprint", "By sprint"],
                     ["status", "By ADO status"],
+                    ["user", "By user"],
+                    ["owner", "Checked out by"],
                 ]
                     .map(([mode, title]) => {
                         if (!rows[mode]) {
@@ -8810,7 +8988,12 @@
                             pinType: pin.type,
                             name: pin.note,
                             sprint: pin.sprint || "",
-                            status: pin.ado ? pin.ado.status || "" : "",
+                            status: [
+                                pin.ado ? pin.ado.status || "" : "",
+                                pin.owner && pin.status !== "done" ? "In progress · " + pin.owner : "",
+                            ]
+                                .filter(Boolean)
+                                .join(" · "),
                             details: pin.ado ? pin.ado.id : "",
                             adoUrl: pin.ado && pin.ado.url,
                             ref: pin,
@@ -9089,7 +9272,7 @@
                                 .filter((c) => c && c.text && c.text !== p.note)
                                 .map((c) => `<div class="cm">${escHtml(c.text)} <i>${escHtml(commentMeta(c))}</i></div>`)
                                 .join("");
-                            return `<tr><td><span class="pn s" style="background:${PIN_COL[p.status === "done" ? "done" : p.type] || "#666"}">${i + 1}</span></td><td>${escHtml(cap(p.type))}</td><td>${escHtml(p.sprint || "")}</td><td>${escHtml(cap(p.status || ""))}</td><td>${escHtml(p.note || "")}${comments}</td><td>${p.ado ? escHtml((p.ado.id || "") + (p.ado.status ? " · " + p.ado.status : "")) : ""}</td></tr>`;
+                            return `<tr><td><span class="pn s" style="background:${PIN_COL[p.status === "done" ? "done" : p.type] || "#666"}">${i + 1}</span></td><td>${escHtml(cap(p.type))}</td><td>${escHtml(p.sprint || "")}</td><td>${escHtml(cap(p.status || "") + (p.owner && p.status !== "done" ? " · in progress: " + p.owner : ""))}</td><td>${escHtml(p.note || "")}${comments}</td><td>${p.ado ? escHtml((p.ado.id || "") + (p.ado.status ? " · " + p.ado.status : "")) : ""}</td></tr>`;
                         })
                         .join("");
                     return `<table><thead><tr><th>#</th><th>Type</th><th>Sprint</th><th>Status</th><th>Note</th><th>ADO</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -9859,7 +10042,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
                     id: "t" + Date.now(),
                     x: Math.round(ch.x),
                     y: Math.round(ch.y),
-                    w: 200,
+                    w: 100,
+                    size: "xs",
                     text: ch.t,
                     fill: ch.c,
                     author: ch.n,
