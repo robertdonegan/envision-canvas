@@ -4126,13 +4126,26 @@
                     minute: "2-digit",
                 });
 
+            // Key-sorted JSON in one pass (the old recursive form re-copied every
+            // image string once per nesting level).
             function canon(obj) {
+                return JSON.stringify(obj, (k, v) => {
+                    if (v && typeof v === "object" && !Array.isArray(v)) {
+                        const o = {};
+                        for (const key of Object.keys(v).sort()) o[key] = v[key];
+                        return o;
+                    }
+                    return v;
+                });
+            }
+            // Legacy form, kept only so ids derived from it stay identical across versions
+            function canonLegacy(obj) {
                 if (Array.isArray(obj))
-                    return JSON.stringify(obj.map((o) => canon(o)));
+                    return JSON.stringify(obj.map((o) => canonLegacy(o)));
                 if (obj && typeof obj === "object") {
                     const out = {};
                     for (const k of Object.keys(obj).sort())
-                        out[k] = canon(obj[k]);
+                        out[k] = canonLegacy(obj[k]);
                     return JSON.stringify(out);
                 }
                 return JSON.stringify(obj);
@@ -4368,7 +4381,7 @@
                     const used = new Set(arr.filter((x) => x && x.id).map((x) => x.id));
                     arr.forEach((x) => {
                         if (!x || x.id) return;
-                        const base = (k === "pins" ? "pin-" : "fr-") + imgHash(canon(x));
+                        const base = (k === "pins" ? "pin-" : "fr-") + imgHash(canonLegacy(x));
                         let id = base,
                             n = 1;
                         while (used.has(id)) id = base + "-" + ++n;
@@ -5181,12 +5194,17 @@
             let undoStack = [],
                 redoStack = [];
             function pushUndo() {
-                undoStack.push(JSON.parse(JSON.stringify(tree)));
+                undoStack.push(snapTree());
                 if (undoStack.length > 40) undoStack.shift();
                 redoStack.length = 0;
             }
-            function commitUndo(preSnapshotString) {
-                undoStack.push(JSON.parse(preSnapshotString));
+            // Snapshots copy the structure only: image data URLs are immutable strings
+            // and are shared, so 40 undo steps don't mean 40 copies of every screenshot.
+            function snapTree() {
+                return cloneTree(tree);
+            }
+            function commitUndo(preSnapshot) {
+                undoStack.push(preSnapshot);
                 if (undoStack.length > 40) undoStack.shift();
                 redoStack.length = 0;
             }
@@ -5200,14 +5218,14 @@
             }
             function doUndo() {
                 if (!undoStack.length) return;
-                redoStack.push(JSON.parse(JSON.stringify(tree)));
+                redoStack.push(snapTree());
                 tree = undoStack.pop();
                 if (!pathValid(path)) path = ["root"];
                 render();
             }
             function doRedo() {
                 if (!redoStack.length) return;
-                undoStack.push(JSON.parse(JSON.stringify(tree)));
+                undoStack.push(snapTree());
                 tree = redoStack.pop();
                 if (!pathValid(path)) path = ["root"];
                 render();
@@ -7160,7 +7178,7 @@
                         startClientY = e.clientY,
                         origX = dataObj.x,
                         origY = dataObj.y;
-                    const preSnap = JSON.stringify(tree);
+                    const preSnap = snapTree();
                     const isGroupDrag =
                         multiSelected.has(dataObj) && multiSelected.size > 1;
                     const groupOrigins = isGroupDrag
@@ -7234,7 +7252,7 @@
                     hit.setPointerCapture && hit.setPointerCapture(e.pointerId);
                     const startX = e.clientX,
                         startY = e.clientY;
-                    const preSnap = JSON.stringify(tree);
+                    const preSnap = snapTree();
                     const related = drawlayer.querySelectorAll(
                         `[data-drid="${dr.id}"]`,
                     );
@@ -7299,7 +7317,7 @@
                 h.addEventListener("pointerdown", (e) => {
                     e.stopPropagation();
                     h.setPointerCapture && h.setPointerCapture(e.pointerId);
-                    const preSnap = JSON.stringify(tree);
+                    const preSnap = snapTree();
                     const related = drawlayer.querySelectorAll(
                         `[data-drid="${dr.id}"]`,
                     );
@@ -7376,7 +7394,7 @@
                         startClientY = e.clientY,
                         origX = p.x,
                         origY = p.y;
-                    const preSnap = JSON.stringify(tree);
+                    const preSnap = snapTree();
                     const isGroupDrag =
                         multiSelected.has(p) && multiSelected.size > 1;
                     const groupOrigins = isGroupDrag
