@@ -3231,6 +3231,155 @@
                 color: #666666;
                 cursor: default;
             }
+
+            /* ---------- MOBILE (view-only: pan, tap pins, double-tap to comment) ---------- */
+            .crumb-caret,
+            .crumb-drop {
+                display: none;
+            }
+            .mm-mobile {
+                display: none !important;
+            }
+            body.mobile {
+                --legend-w: 0px;
+            }
+            body.mobile #toolbar,
+            body.mobile #zoomctl,
+            body.mobile #hintToastWrap,
+            body.mobile #overlayPanel,
+            body.mobile #tableBtn,
+            body.mobile #legendBtn,
+            body.mobile #mapBtn,
+            body.mobile #sitemapResize {
+                display: none !important;
+            }
+            body.mobile .mm-mobile {
+                display: flex !important;
+            }
+            body.mobile #topbar {
+                gap: 8px;
+                padding: 0 10px;
+            }
+            body.mobile #topright {
+                gap: 4px;
+            }
+            body.mobile #presence {
+                display: none !important;
+            }
+            body.mobile #searchWrap {
+                flex: 0 1 143px;
+                width: auto;
+                min-width: 0;
+                margin-left: auto;
+            }
+            body.mobile #searchResults {
+                position: fixed;
+                top: 60px;
+                left: 10px;
+                right: 10px;
+                width: auto;
+            }
+            body.mobile.map-open {
+                --map-w: min(86vw, 320px);
+            }
+            body.mobile #breadcrumb {
+                position: relative;
+                flex-wrap: nowrap;
+                min-width: 0;
+                flex: 0 1 auto;
+            }
+            body.mobile #breadcrumb > .crumb:not(.current),
+            body.mobile #breadcrumb > .sep {
+                display: none;
+            }
+            body.mobile #breadcrumb .crumb.current {
+                cursor: pointer;
+                max-width: 38vw;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            body.mobile #breadcrumb .crumb-caret {
+                display: inline-flex;
+                color: var(--ink-faint);
+                cursor: pointer;
+            }
+            body.mobile #breadcrumb .crumb-caret svg {
+                width: 14px;
+                height: 14px;
+            }
+            body.mobile #breadcrumb.open .crumb-drop {
+                display: block;
+                position: absolute;
+                top: calc(100% + 12px);
+                left: -4px;
+                min-width: 200px;
+                max-width: 80vw;
+                padding: 4px;
+                background: var(--surface);
+                border: 1px solid var(--border-strong);
+                border-radius: 4px;
+                box-shadow: 0 6px 20px rgba(20, 18, 12, 0.14);
+                z-index: 400;
+            }
+            .crumb-drop .cd-item {
+                display: block;
+                width: 100%;
+                padding: 9px 12px;
+                border: none;
+                border-radius: 3px;
+                background: none;
+                color: var(--ink);
+                font: 13px var(--sans);
+                text-align: left;
+                cursor: pointer;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .crumb-drop .cd-item.current {
+                font-weight: 600;
+                color: var(--terminal);
+            }
+            .crumb-drop .cd-item:active {
+                background: var(--bg-canvas);
+            }
+            /* nothing on the canvas can be moved, edited or deleted; pins and screens stay tappable */
+            body.mobile .asset-card,
+            body.mobile .sticky,
+            body.mobile .frame-box .ft,
+            body.mobile #drawlayer *,
+            body.mobile .node * {
+                pointer-events: none !important;
+            }
+            body.mobile .node-delete,
+            body.mobile .node-upload,
+            body.mobile .node-diff,
+            body.mobile .node-dive,
+            body.mobile .img-upload,
+            body.mobile .asset-delete,
+            body.mobile .tc-resize,
+            body.mobile #tcBar {
+                display: none !important;
+            }
+            body.mobile #saveStatus {
+                bottom: 10px;
+                right: 10px;
+                height: 26px;
+                padding: 0 9px;
+                gap: 5px;
+                font-size: 11px;
+            }
+            body.mobile #saveStatus .ss-text {
+                max-width: 52vw;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            body.mobile #saveStatus .ss-dot {
+                width: 6px;
+                height: 6px;
+            }
 </style>
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     </head>
@@ -3612,6 +3761,10 @@
             </div>
 
             <div id="moreMenu" role="menu" hidden>
+                <button role="menuitem" class="mm-mobile" data-action="table"><span class="mi-ico" data-mi="table"></span><span class="mi-t" data-for="table">List view</span></button>
+                <button role="menuitem" class="mm-mobile" data-action="sitemap"><span class="mi-ico" data-mi="sitemap"></span><span class="mi-t" data-for="sitemap">Sitemap</span></button>
+                <button role="menuitem" class="mm-mobile" data-action="pin-labels"><span class="mi-ico" data-mi="legend"></span><span class="mi-t" data-for="pin-labels">Pin labels</span></button>
+                <div class="mm-sep mm-mobile"></div>
                 <button role="menuitem" data-action="export-md"><span class="mi-ico" data-mi="download"></span>Export as Markdown</button>
                 <button role="menuitem" data-action="export-html"><span class="mi-ico" data-mi="download"></span>Export as HTML (with images)</button>
                 <button role="menuitem" data-action="export-json"><span class="mi-ico" data-mi="download"></span>Export as JSON</button>
@@ -5006,6 +5159,24 @@
                 return v + DRAW_MARGIN;
             }
             let currentTool = "select";
+            const mobileMQ = window.matchMedia(
+                "(max-width: 700px), (pointer: coarse) and (max-height: 520px)",
+            );
+            let IS_MOBILE = mobileMQ.matches;
+            function syncMobile() {
+                IS_MOBILE = mobileMQ.matches;
+                document.body.classList.toggle("mobile", IS_MOBILE);
+                const si = document.getElementById("searchInput");
+                if (si)
+                    si.placeholder = IS_MOBILE
+                        ? "Search"
+                        : "Search screens, pins, ADO IDs…";
+            }
+            syncMobile();
+            mobileMQ.addEventListener("change", () => {
+                syncMobile();
+                render();
+            });
             let overlayMode = "type"; // 'type' | 'sprint' | 'status' | 'user' | 'owner'
             let overlayFocus = null; // { mode, key } — only this group stays emphasised
             // Everyone who has commented on a pin, original poster first.
@@ -5586,6 +5757,7 @@
                 selectedData = null;
 
                 breadcrumbEl.innerHTML = "";
+                breadcrumbEl.classList.remove("open");
                 path.forEach((id, idx) => {
                     const c = getCanvas(path.slice(0, idx + 1));
                     const isCurrent = idx === path.length - 1;
@@ -5594,6 +5766,10 @@
                     span.textContent = c.title;
                     span.title = isCurrent ? "Double-click to rename" : "";
                     span.onclick = () => {
+                        if (IS_MOBILE) {
+                            breadcrumbEl.classList.toggle("open");
+                            return;
+                        }
                         if (!isCurrent) {
                             path = path.slice(0, idx + 1);
                             render();
@@ -5602,6 +5778,7 @@
                     if (isCurrent) {
                         span.addEventListener("dblclick", (e) => {
                             e.stopPropagation();
+                            if (IS_MOBILE) return;
                             span.contentEditable = "true";
                             span.focus();
                             document.execCommand("selectAll", false, null);
@@ -5639,6 +5816,31 @@
                         breadcrumbEl.appendChild(sep);
                     }
                 });
+                // Phone layout: the trail collapses into a dropdown under the current title
+                const caret = document.createElement("span");
+                caret.className = "crumb-caret";
+                caret.innerHTML = uiIcon("key-down");
+                caret.onclick = () => breadcrumbEl.classList.toggle("open");
+                breadcrumbEl.appendChild(caret);
+                const drop = document.createElement("div");
+                drop.className = "crumb-drop";
+                path.forEach((id, idx) => {
+                    const item = document.createElement("button");
+                    item.type = "button";
+                    item.className = "cd-item" + (idx === path.length - 1 ? " current" : "");
+                    item.style.paddingLeft = 12 + idx * 12 + "px";
+                    item.textContent = getCanvas(path.slice(0, idx + 1)).title;
+                    item.onclick = (e) => {
+                        e.stopPropagation();
+                        breadcrumbEl.classList.remove("open");
+                        if (idx < path.length - 1) {
+                            path = path.slice(0, idx + 1);
+                            render();
+                        }
+                    };
+                    drop.appendChild(item);
+                });
+                breadcrumbEl.appendChild(drop);
 
                 const hiddenRefs = new Set();
                 const collapsedFrameRects = [];
@@ -6873,6 +7075,7 @@
                     }
                 });
                 el.addEventListener("pointerdown", (e) => {
+                    if (IS_MOBILE) return; // view-only: the viewport pans instead
                     if (e.metaKey || e.ctrlKey) return; // handled by the click listener above
                     if (e.shiftKey && currentTool === "select") return; // shift-drag → box select
                     if (["pen", "highlight", "arrow"].includes(currentTool))
@@ -7076,6 +7279,23 @@
                     }
                 });
                 el.addEventListener("pointerdown", (e) => {
+                    if (IS_MOBILE) {
+                        // pins can't be moved on a phone: a tap opens the card, a drag pans
+                        const sx = e.clientX,
+                            sy = e.clientY;
+                        const stop = () => {
+                            window.removeEventListener("pointerup", up, true);
+                            window.removeEventListener("pointercancel", stop, true);
+                        };
+                        const up = (ev) => {
+                            stop();
+                            if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 8)
+                                openPinCard(ev.clientX, ev.clientY, p);
+                        };
+                        window.addEventListener("pointerup", up, true);
+                        window.addEventListener("pointercancel", stop, true);
+                        return;
+                    }
                     if (e.metaKey || e.ctrlKey) return; // handled by the click listener above
                     if (e.shiftKey && currentTool === "select") return; // shift-drag → box select
                     if (["pen", "highlight", "arrow"].includes(currentTool))
@@ -7936,6 +8156,81 @@
                 }
             });
 
+            // Phones: synthesise a double-click from two quick taps (not every mobile
+            // browser fires one), and drop the native one so it can't run twice.
+            {
+                let tapStart = null,
+                    lastTap = null,
+                    lastSynthAt = 0;
+                const touches = new Set();
+                window.addEventListener(
+                    "pointerdown",
+                    (e) => {
+                        if (e.pointerType !== "touch") return;
+                        touches.add(e.pointerId);
+                        tapStart =
+                            touches.size === 1
+                                ? { x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId }
+                                : null;
+                        if (touches.size > 1) lastTap = null;
+                    },
+                    true,
+                );
+                window.addEventListener(
+                    "pointercancel",
+                    (e) => {
+                        touches.delete(e.pointerId);
+                        tapStart = null;
+                    },
+                    true,
+                );
+                window.addEventListener(
+                    "pointerup",
+                    (e) => {
+                        if (e.pointerType !== "touch") return;
+                        touches.delete(e.pointerId);
+                        const s = tapStart;
+                        tapStart = null;
+                        if (!IS_MOBILE || !s || s.id !== e.pointerId) return;
+                        const now = Date.now();
+                        if (now - s.t > 350 || Math.hypot(e.clientX - s.x, e.clientY - s.y) > 10) {
+                            lastTap = null;
+                            return;
+                        }
+                        if (lastTap && now - lastTap.t < 350 && Math.hypot(lastTap.x - e.clientX, lastTap.y - e.clientY) < 30) {
+                            lastTap = null;
+                            const tgt = document.elementFromPoint(e.clientX, e.clientY);
+                            if (
+                                !tgt ||
+                                !viewportEl.contains(tgt) ||
+                                tgt.closest(".pin, .sprintchip, .pchat, #pinCard, #cursorLayer .cursor")
+                            )
+                                return;
+                            lastSynthAt = now;
+                            tgt.dispatchEvent(
+                                new MouseEvent("dblclick", {
+                                    bubbles: true,
+                                    cancelable: true,
+                                    clientX: e.clientX,
+                                    clientY: e.clientY,
+                                    view: window,
+                                }),
+                            );
+                        } else lastTap = { x: e.clientX, y: e.clientY, t: now };
+                    },
+                    true,
+                );
+                viewportEl.addEventListener(
+                    "dblclick",
+                    (e) => {
+                        if (IS_MOBILE && e.isTrusted && Date.now() - lastSynthAt < 800) {
+                            e.stopImmediatePropagation();
+                            e.preventDefault();
+                        }
+                    },
+                    true,
+                );
+            }
             // Shift + double-click adds a pin even on top of a screen, image or note.
             // Capture phase, so it runs before those objects' own double-click actions.
             viewportEl.addEventListener(
@@ -8025,9 +8320,8 @@
             );
 
             viewportEl.addEventListener("pointerdown", (e) => {
-                const onInteractive = e.target.closest(
-                    ".node, .asset-card, .pin",
-                );
+                const onInteractive =
+                    !IS_MOBILE && e.target.closest(".node, .asset-card, .pin");
                 if (onInteractive && currentTool === "select" && !e.shiftKey)
                     return; // select tool: let the item handle its own drag
                 pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -8802,20 +9096,22 @@
                     })
                     .join("");
             }
+            function togglePinLabels() {
+                const hide = !document.body.classList.contains("hide-pin-labels");
+                document.body.classList.toggle("hide-pin-labels", hide);
+                try {
+                    localStorage.setItem("envision-pin-labels", hide ? "0" : "1");
+                } catch (err) {}
+                const t = document.getElementById("pinLabelsToggle");
+                if (t) t.setAttribute("aria-checked", String(!hide));
+            }
             // Title: choose how pins are coloured. Row: focus on that group
             // (click again to clear); other pins are dimmed.
             document
                 .getElementById("overlayLegend")
                 .addEventListener("click", (e) => {
                     if (e.target.closest("#pinLabelsToggle")) {
-                        const hide = !document.body.classList.contains("hide-pin-labels");
-                        document.body.classList.toggle("hide-pin-labels", hide);
-                        try {
-                            localStorage.setItem("envision-pin-labels", hide ? "0" : "1");
-                        } catch (err) {}
-                        document
-                            .getElementById("pinLabelsToggle")
-                            .setAttribute("aria-checked", String(!hide));
+                        togglePinLabels();
                         return;
                     }
                     const section = e.target.closest(".legend-section");
@@ -9462,10 +9758,16 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
             const moreBtn = document.getElementById("moreBtn");
             const moreMenu = document.getElementById("moreMenu");
             moreMenu.querySelectorAll("[data-mi]").forEach((el) => {
-                el.innerHTML = ACTION_ICONS[el.dataset.mi] || "";
+                el.innerHTML = ACTION_ICONS[el.dataset.mi] || ICONS[el.dataset.mi] || "";
             });
             function setMoreMenu(open) {
                 moreMenu.hidden = !open;
+                if (open) {
+                    const lbl = (k, t) => (moreMenu.querySelector(`[data-for="${k}"]`).textContent = t);
+                    lbl("table", tableView.hidden ? "List view" : "Hide list view");
+                    lbl("sitemap", document.body.classList.contains("map-open") ? "Hide sitemap" : "Sitemap");
+                    lbl("pin-labels", document.body.classList.contains("hide-pin-labels") ? "Show pin labels" : "Hide pin labels");
+                }
                 moreBtn.classList.toggle("active", open);
                 moreBtn.setAttribute("aria-expanded", String(open));
                 if (open) {
@@ -9521,6 +9823,15 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
                         break;
                     case "share":
                         copyCanvasLink();
+                        break;
+                    case "table":
+                        setTableOpen(tableView.hidden);
+                        break;
+                    case "sitemap":
+                        setMapOpen(!document.body.classList.contains("map-open"));
+                        break;
+                    case "pin-labels":
+                        togglePinLabels();
                         break;
                 }
             });
