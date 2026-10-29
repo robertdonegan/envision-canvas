@@ -1415,7 +1415,7 @@
                 border-radius: 3px;
                 padding: 1px 3px;
                 margin: -1px -3px;
-                font-size: calc(13px * var(--ts-title));
+                font-size: calc(12px * var(--ts-title));
                 font-weight: 700;
                 color: var(--ink);
                 flex: 1 1 0;
@@ -1943,7 +1943,7 @@
                 text-overflow: ellipsis;
             }
             .image-card .asset-label {
-                font-size: calc(14.5px * var(--ts-title));
+                font-size: calc(13px * var(--ts-title));
                 font-weight: 700;
                 color: var(--ink);
                 min-width: 0;
@@ -2345,7 +2345,7 @@
                 position: absolute;
                 border: 1.5px dashed var(--border-strong);
                 border-radius: 10px;
-                background: rgba(255, 255, 255, 0.18);
+                background: #fff;
                 pointer-events: none;
             }
             .lasso-box {
@@ -2370,15 +2370,31 @@
             }
             .frame-label .ft {
                 font-family: var(--mono);
-                font-size: calc(10px * var(--ts, 1));
-                color: var(--ink-dim);
+                font-size: calc(12px * var(--ts, 1));
+                font-weight: 700;
+                color: #000;
                 background: var(--surface);
                 border: 1px solid var(--border-strong);
                 border-radius: calc(6px * var(--ts, 1));
                 padding: calc(3px * var(--ts, 1)) calc(8px * var(--ts, 1));
+                cursor: grab;
+            }
+            .frame-label,
+            .frame-collapsed-card {
+                cursor: grab;
+            }
+            .frame-label.dragging,
+            .frame-label.dragging .ft,
+            .frame-collapsed-card.dragging,
+            .frame-collapsed-card.dragging .ft {
+                cursor: grabbing;
+            }
+            .frame-label .ft[contenteditable="true"],
+            .frame-collapsed-card .ft[contenteditable="true"] {
                 cursor: text;
             }
-            .frame-label .fc {
+            .frame-label .fc,
+            .frame-label .fd {
                 font-family: var(--mono);
                 font-size: 10px;
                 color: var(--ink-faint);
@@ -2395,6 +2411,70 @@
             .frame-label .fc:hover {
                 background: var(--terminal);
                 color: #fff;
+            }
+            .frame-label .fd:hover {
+                background: #c8344d;
+                border-color: #c8344d;
+                color: #fff;
+            }
+            .frame-label .fd svg,
+            .frame-collapsed-card .fd svg {
+                width: 14px;
+                height: 14px;
+            }
+            .frame-collapsed-card .fd {
+                display: inline-flex;
+                font-size: calc(10px * var(--ts, 1));
+                color: var(--ink-faint);
+                cursor: pointer;
+            }
+            .frame-collapsed-card .fd:hover {
+                color: #c8344d;
+            }
+            .frame-box .fh {
+                position: absolute;
+                width: calc(12px * var(--ts, 1));
+                height: calc(12px * var(--ts, 1));
+                background: var(--surface);
+                border: 1.5px solid var(--terminal);
+                border-radius: 3px;
+                box-sizing: border-box;
+                opacity: 0;
+                pointer-events: auto;
+                z-index: 2;
+            }
+            .frame-box.selected .fh,
+            .frame-box .fh:hover {
+                opacity: 1;
+            }
+            .frame-box .fh.nw {
+                left: 0;
+                top: 0;
+                transform: translate(-50%, -50%);
+                cursor: nwse-resize;
+            }
+            .frame-box .fh.ne {
+                left: 100%;
+                top: 0;
+                transform: translate(-50%, -50%);
+                cursor: nesw-resize;
+            }
+            .frame-box .fh.sw {
+                left: 0;
+                top: 100%;
+                transform: translate(-50%, -50%);
+                cursor: nesw-resize;
+            }
+            .frame-box .fh.se {
+                left: 100%;
+                top: 100%;
+                transform: translate(-50%, -50%);
+                cursor: nwse-resize;
+            }
+            /* while resizing a frame, what it would group lights up */
+            .frame-catch {
+                outline: 2px dashed var(--terminal);
+                outline-offset: 3px;
             }
             .frame-box.collapsed {
                 border: none;
@@ -2413,9 +2493,10 @@
             }
             .frame-collapsed-card .ft {
                 font-family: var(--mono);
-                font-size: calc(11px * var(--ts, 1));
-                color: var(--ink);
-                cursor: text;
+                font-size: calc(13px * var(--ts, 1));
+                font-weight: 700;
+                color: #000;
+                cursor: grab;
             }
             .frame-collapsed-card .fc {
                 font-family: var(--mono);
@@ -3501,10 +3582,14 @@
             body.mobile .asset-card,
             body.mobile .sticky,
             body.mobile .frame-box .ft,
+            body.mobile .frame-box .fh,
+            body.mobile .frame-box .fd,
             body.mobile #drawlayer *,
             body.mobile .node * {
                 pointer-events: none !important;
             }
+            body.mobile .frame-box .fh,
+            body.mobile .frame-box .fd,
             body.mobile .node-delete,
             body.mobile .node-upload,
             body.mobile .node-link,
@@ -5412,6 +5497,208 @@
                 const fi = (cv.frames || []).indexOf(o);
                 if (fi > -1) cv.frames.splice(fi, 1);
             }
+            /* ---------- Frames: membership, move, resize, delete ---------- */
+            // A frame groups whatever sits inside its rectangle (by top-left corner),
+            // so resizing a frame changes what it holds.
+            function frameHas(f, x, y) {
+                return x >= f.x && x <= f.x + f.w && y >= f.y && y <= f.y + f.h;
+            }
+            function frameMembers(cv, f) {
+                const items = [
+                    ...cv.nodes,
+                    ...(cv.assets || []),
+                    ...(cv.pins || []),
+                    ...(cv.frames || []).filter((o) => o !== f),
+                ].filter((o) => frameHas(f, o.x, o.y));
+                const strokes = [],
+                    arrows = [];
+                (cv.drawings || []).forEach((d) => {
+                    if (d.type === "arrow") {
+                        const e = resolveArrowEndpoints(d, cv);
+                        if (frameHas(f, e.p1.x, e.p1.y) && frameHas(f, e.p2.x, e.p2.y))
+                            arrows.push(d);
+                    } else if (
+                        d.points &&
+                        d.points.length &&
+                        d.points.every((p) => frameHas(f, p.x, p.y))
+                    )
+                        strokes.push(d);
+                });
+                return { items, strokes, arrows };
+            }
+            function setObjPos(o) {
+                const el = domByObj.get(o);
+                if (!el) return;
+                const target =
+                    el.classList.contains("pin") && el.parentElement ? el.parentElement : el;
+                target.style.left = o.x + "px";
+                target.style.top = o.y + "px";
+            }
+            // Drag a frame by its label: everything inside it travels along.
+            function startFrameDrag(ev, f, fb, handle) {
+                const cv = getCanvas(path);
+                selectNode(fb, f);
+                handle.setPointerCapture && handle.setPointerCapture(ev.pointerId);
+                const m = frameMembers(cv, f);
+                const preSnap = snapTree();
+                const sx = ev.clientX,
+                    sy = ev.clientY;
+                const movers = [f, ...m.items].map((o) => ({ o, x: o.x, y: o.y }));
+                const strokes = m.strokes.map((d) => ({
+                    d,
+                    pts: d.points.map((p) => ({ x: p.x, y: p.y })),
+                }));
+                const arrows = m.arrows.map((d) => ({ d, e: resolveArrowEndpoints(d, cv) }));
+                const liveEls = [
+                    ...m.strokes,
+                    ...m.arrows.filter((d) => !d.startRef && !d.endRef),
+                ].flatMap((d) => [...drawlayer.querySelectorAll(`[data-drid="${d.id}"]`)]);
+                let moved = false,
+                    dx = 0,
+                    dy = 0;
+                const onMove = (e) => {
+                    const rx = (e.clientX - sx) / zoom,
+                        ry = (e.clientY - sy) / zoom;
+                    if (!moved) {
+                        if (Math.abs(rx) < 3 && Math.abs(ry) < 3) return;
+                        moved = true;
+                        handle.classList.add("dragging");
+                    }
+                    dx = snapVal(rx);
+                    dy = snapVal(ry);
+                    movers.forEach((mv) => {
+                        mv.o.x = mv.x + dx;
+                        mv.o.y = mv.y + dy;
+                        setObjPos(mv.o);
+                    });
+                    liveEls.forEach((el) =>
+                        el.setAttribute("transform", `translate(${dx} ${dy})`),
+                    );
+                    if (renderedWeb.length) syncWebFrames();
+                };
+                const onUp = () => {
+                    handle.removeEventListener("pointermove", onMove);
+                    handle.removeEventListener("pointerup", onUp);
+                    handle.removeEventListener("pointercancel", onUp);
+                    handle.classList.remove("dragging");
+                    if (!moved) return;
+                    strokes.forEach((s) => {
+                        s.d.points = s.pts.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+                    });
+                    arrows.forEach((a) => {
+                        if (!a.d.startRef) {
+                            a.d.x1 = a.e.p1.x + dx;
+                            a.d.y1 = a.e.p1.y + dy;
+                        }
+                        if (!a.d.endRef) {
+                            a.d.x2 = a.e.p2.x + dx;
+                            a.d.y2 = a.e.p2.y + dy;
+                        }
+                    });
+                    commitUndo(preSnap);
+                    render();
+                };
+                handle.addEventListener("pointermove", onMove);
+                handle.addEventListener("pointerup", onUp);
+                handle.addEventListener("pointercancel", onUp);
+            }
+            function attachFrameResize(h, corner, f, fb) {
+                h.addEventListener("pointerdown", (ev) => {
+                    if (IS_MOBILE) return;
+                    ev.stopPropagation();
+                    ev.preventDefault();
+                    selectNode(fb, f);
+                    h.setPointerCapture && h.setPointerCapture(ev.pointerId);
+                    const cv = getCanvas(path);
+                    const preSnap = snapTree();
+                    const sx = ev.clientX,
+                        sy = ev.clientY;
+                    const r0 = { x: f.x, y: f.y, w: f.w, h: f.h };
+                    const MIN_W = 80,
+                        MIN_H = 60;
+                    let moved = false;
+                    let lit = [];
+                    const onMove = (e) => {
+                        const dx = (e.clientX - sx) / zoom,
+                            dy = (e.clientY - sy) / zoom;
+                        if (!moved && Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
+                        moved = true;
+                        let x1 = r0.x,
+                            y1 = r0.y,
+                            x2 = r0.x + r0.w,
+                            y2 = r0.y + r0.h;
+                        if (corner.includes("w")) x1 = snapVal(r0.x + dx);
+                        else x2 = snapVal(r0.x + r0.w + dx);
+                        if (corner.includes("n")) y1 = snapVal(r0.y + dy);
+                        else y2 = snapVal(r0.y + r0.h + dy);
+                        if (x2 - x1 < MIN_W) {
+                            if (corner.includes("w")) x1 = x2 - MIN_W;
+                            else x2 = x1 + MIN_W;
+                        }
+                        if (y2 - y1 < MIN_H) {
+                            if (corner.includes("n")) y1 = y2 - MIN_H;
+                            else y2 = y1 + MIN_H;
+                        }
+                        f.x = x1;
+                        f.y = y1;
+                        f.w = x2 - x1;
+                        f.h = y2 - y1;
+                        fb.style.left = f.x + "px";
+                        fb.style.top = f.y + "px";
+                        fb.style.width = f.w + "px";
+                        fb.style.height = f.h + "px";
+                        lit.forEach((el) => el.classList.remove("frame-catch"));
+                        lit = frameMembers(cv, f)
+                            .items.filter((o) => !(cv.frames || []).includes(o))
+                            .map((o) => domByObj.get(o))
+                            .filter(Boolean);
+                        lit.forEach((el) => el.classList.add("frame-catch"));
+                    };
+                    const onUp = () => {
+                        h.removeEventListener("pointermove", onMove);
+                        h.removeEventListener("pointerup", onUp);
+                        h.removeEventListener("pointercancel", onUp);
+                        lit.forEach((el) => el.classList.remove("frame-catch"));
+                        if (!moved) return;
+                        commitUndo(preSnap);
+                        render();
+                    };
+                    h.addEventListener("pointermove", onMove);
+                    h.addEventListener("pointerup", onUp);
+                    h.addEventListener("pointercancel", onUp);
+                });
+            }
+            async function confirmFrameDelete(frames, cv) {
+                const inside = new Set();
+                frames.forEach((f) => {
+                    const m = frameMembers(cv, f);
+                    m.items.forEach((o) => !frames.includes(o) && inside.add(o));
+                    m.strokes.forEach((d) => inside.add(d));
+                    m.arrows.forEach((d) => inside.add(d));
+                });
+                const names = frames
+                    .map((f) => `<strong>"${escHtml(f.label || "Frame")}"</strong>`)
+                    .join(", ");
+                const keep = inside.size
+                    ? ` The ${inside.size} item${inside.size > 1 ? "s" : ""} inside ${frames.length > 1 ? "them" : "it"} will stay on the canvas, no longer grouped.`
+                    : "";
+                return showConfirm({
+                    title: frames.length > 1 ? "Delete frames?" : "Delete frame?",
+                    bodyHtml: `Delete ${frames.length > 1 ? "the frames" : "the frame"} ${names}?${keep} You can Undo afterwards.`,
+                    confirmLabel: "Delete frame" + (frames.length > 1 ? "s" : ""),
+                });
+            }
+            async function deleteFrame(f) {
+                const cv = getCanvas(path);
+                if (!(await confirmFrameDelete([f], cv))) return;
+                pushUndo();
+                removeItemFromCanvas(cv, f);
+                if (selectedData === f) {
+                    selectedData = null;
+                    selectedEl = null;
+                }
+                render();
+            }
             async function deleteSelection() {
                 const cv = getCanvas(path);
                 const items = [];
@@ -5440,6 +5727,10 @@
                 const images = items.filter(
                     (o) => (cv.assets || []).includes(o) && o.type === "image",
                 );
+                const frameItems = items.filter((o) => (cv.frames || []).includes(o));
+                if (frameItems.length && !(screens.length || images.length)) {
+                    if (!(await confirmFrameDelete(frameItems, cv))) return;
+                }
                 if (screens.length || images.length) {
                     const parts = [];
                     if (screens.length) parts.push(screenWarningHtml(screens, cv));
@@ -6095,20 +6386,45 @@
                     const fb = document.createElement("div");
                     fb.style.left = f.x + "px";
                     fb.style.top = f.y + "px";
+                    domByObj.set(f, fb);
+                    const ftTitle = "Drag to move · double-click to rename";
                     if (f.collapsed) {
                         fb.className = "frame-box collapsed";
-                        fb.innerHTML = `<div class="frame-collapsed-card"><span class="ft" contenteditable="false" title="Double-click to rename">${f.label}</span><span class="fc" title="Expand">${uiIcon("key-right")}</span></div>`;
+                        fb.innerHTML = `<div class="frame-collapsed-card"><span class="ft" contenteditable="false" title="${ftTitle}">${escHtml(f.label)}</span><span class="fc" title="Expand">${uiIcon("key-right")}</span><span class="fd" title="Delete frame">${PCC_DEL_ICON}</span></div>`;
                     } else {
                         fb.className = "frame-box";
                         fb.style.width = f.w + "px";
                         fb.style.height = f.h + "px";
-                        fb.innerHTML = `<div class="frame-label"><span class="ft" contenteditable="false" title="Double-click to rename">${f.label}</span><span class="fc" title="Collapse">${uiIcon("key-down")}</span></div>`;
+                        fb.innerHTML = `<div class="frame-label"><span class="ft" contenteditable="false" title="${ftTitle}">${escHtml(f.label)}</span><span class="fc" title="Collapse">${uiIcon("key-down")}</span><span class="fd" title="Delete frame">${PCC_DEL_ICON}</span></div>`;
+                        ["nw", "ne", "sw", "se"].forEach((c) => {
+                            const h = document.createElement("span");
+                            h.className = "fh " + c;
+                            h.title = "Resize frame";
+                            fb.appendChild(h);
+                            attachFrameResize(h, c, f, fb);
+                        });
                     }
                     const ft = fb.querySelector(".ft");
-                    ft.addEventListener("pointerdown", (ev) =>
+                    const frameHandle = fb.querySelector(
+                        ".frame-label, .frame-collapsed-card",
+                    );
+                    frameHandle.addEventListener("pointerdown", (ev) => {
+                        if (ev.target.closest(".fc, .fd")) return;
+                        ev.stopPropagation();
+                        if (IS_MOBILE || ft.isContentEditable) return;
+                        startFrameDrag(ev, f, fb, frameHandle);
+                    });
+                    const fd = fb.querySelector(".fd");
+                    fd.addEventListener("pointerdown", (ev) =>
                         ev.stopPropagation(),
                     );
-                    ft.addEventListener("dblclick", (ev) => {
+                    fd.addEventListener("click", (ev) => {
+                        ev.stopPropagation();
+                        deleteFrame(f);
+                    });
+                    // pointer capture on the drag handle retargets click events to it, so listen there
+                    frameHandle.addEventListener("dblclick", (ev) => {
+                        if (ev.target.closest(".fc, .fd") || IS_MOBILE) return;
                         ev.stopPropagation();
                         ft.contentEditable = "true";
                         ft.focus();
