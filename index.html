@@ -10575,10 +10575,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
                 const arr = (pr.path || "").split("/");
                 return arr.length && pathValid(arr) ? getCanvas(arr).title : "another canvas";
             }
+            const MAX_PEER_AVATARS = 9; // plus your own = 10 in the top bar
             function renderPeerAvatars() {
                 peersWrap.innerHTML = "";
                 const list = [...peers.values()];
-                list.slice(0, 4).forEach((pr) => {
+                list.slice(0, MAX_PEER_AVATARS).forEach((pr) => {
                     const av = document.createElement("div");
                     av.className = "avatar peer";
                     av.style.background = pr.color;
@@ -10595,11 +10596,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
                     });
                     peersWrap.appendChild(av);
                 });
-                if (list.length > 4) {
+                if (list.length > MAX_PEER_AVATARS) {
                     const more = document.createElement("div");
                     more.className = "avatar peer more";
-                    more.textContent = "+" + (list.length - 4);
-                    more.title = list.slice(4).map((p) => p.name).join(", ");
+                    more.textContent = "+" + (list.length - MAX_PEER_AVATARS);
+                    more.title = list.slice(MAX_PEER_AVATARS).map((p) => p.name).join(", ");
                     peersWrap.appendChild(more);
                 }
             }
