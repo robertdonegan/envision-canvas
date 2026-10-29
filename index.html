@@ -273,8 +273,8 @@
                 height: calc(12px * var(--ts, 1));
             }
             .frame-label .fc svg {
-                width: 14px;
-                height: 14px;
+                width: calc(14px * var(--ts, 1));
+                height: calc(14px * var(--ts, 1));
             }
             .frame-collapsed-card .fc {
                 display: inline-flex;
@@ -2343,7 +2343,7 @@
 
             .frame-box {
                 position: absolute;
-                border: 1.5px dashed var(--border-strong);
+                border: calc(1.5px * var(--ts, 1)) dashed var(--border-strong);
                 border-radius: 10px;
                 background: #fff;
                 pointer-events: none;
@@ -2361,11 +2361,11 @@
             }
             .frame-label {
                 position: absolute;
-                top: -26px;
+                top: calc(-26px * var(--ts, 1));
                 left: 0;
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: calc(6px * var(--ts, 1));
                 pointer-events: auto;
             }
             .frame-label .ft {
@@ -2374,7 +2374,7 @@
                 font-weight: 700;
                 color: #000;
                 background: var(--surface);
-                border: 1px solid var(--border-strong);
+                border: calc(1px * var(--ts, 1)) solid var(--border-strong);
                 border-radius: calc(6px * var(--ts, 1));
                 padding: calc(3px * var(--ts, 1)) calc(8px * var(--ts, 1));
                 cursor: grab;
@@ -2396,13 +2396,13 @@
             .frame-label .fc,
             .frame-label .fd {
                 font-family: var(--mono);
-                font-size: 10px;
+                font-size: calc(10px * var(--ts, 1));
                 color: var(--ink-faint);
                 background: var(--surface);
-                border: 1px solid var(--border-strong);
-                border-radius: 6px;
-                width: 20px;
-                height: 20px;
+                border: calc(1px * var(--ts, 1)) solid var(--border-strong);
+                border-radius: calc(6px * var(--ts, 1));
+                width: calc(20px * var(--ts, 1));
+                height: calc(20px * var(--ts, 1));
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -2419,8 +2419,8 @@
             }
             .frame-label .fd svg,
             .frame-collapsed-card .fd svg {
-                width: 14px;
-                height: 14px;
+                width: calc(14px * var(--ts, 1));
+                height: calc(14px * var(--ts, 1));
             }
             .frame-collapsed-card .fd {
                 display: inline-flex;
@@ -2508,8 +2508,8 @@
                 color: var(--ink);
             }
             .frame-box.selected {
-                outline: 2px solid var(--terminal);
-                outline-offset: 3px;
+                outline: calc(2px * var(--ts, 1)) solid var(--terminal);
+                outline-offset: calc(3px * var(--ts, 1));
                 border-radius: 12px;
             }
             .frame-box.collapsed.selected {
