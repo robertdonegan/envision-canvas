@@ -1809,6 +1809,107 @@
                 width: 200px;
                 padding: 10px 12px;
             }
+            .link-card .lk-live {
+                margin-left: auto;
+                font: inherit;
+                color: var(--ink-faint);
+                background: none;
+                border: 1px solid var(--border-strong);
+                border-radius: 3px;
+                padding: 1px 5px;
+                cursor: pointer;
+            }
+            .link-card .lk-live:hover {
+                color: var(--ink);
+            }
+            /* Live site: the iframe lives in #webLayer (kept across renders so the page
+               doesn't reload); this card is a see-through frame drawn on top of it */
+            .web-card {
+                background: transparent;
+                overflow: visible;
+            }
+            .web-card .img-foot {
+                cursor: grab;
+                border-radius: 0 0 var(--radius) var(--radius);
+            }
+            .web-card .img-foot .asset-label {
+                cursor: inherit;
+            }
+            .web-card .img-foot .asset-label[contenteditable="true"] {
+                cursor: text;
+            }
+            .web-card .web-resize {
+                /* constant on-screen size whatever the zoom */
+                --g: calc(14px / var(--zoom, 1));
+                position: absolute;
+                right: calc(var(--g) / -2);
+                bottom: calc(var(--g) / -2);
+                width: var(--g);
+                height: var(--g);
+                box-sizing: border-box;
+                border-radius: 50%;
+                background: var(--surface);
+                border: calc(2px / var(--zoom, 1)) solid var(--terminal);
+                cursor: nwse-resize;
+                display: none;
+                z-index: 6;
+            }
+            .web-card:hover .web-resize,
+            .web-card.selected .web-resize,
+            .web-card.resizing .web-resize {
+                display: block;
+            }
+            .web-card.resizing .web-resize::after {
+                content: attr(data-size);
+                position: absolute;
+                right: 18px;
+                bottom: 18px;
+                font-family: var(--mono);
+                font-size: calc(11px / var(--zoom, 1));
+                white-space: nowrap;
+                color: #fff;
+                background: var(--terminal);
+                padding: calc(2px / var(--zoom, 1)) calc(6px / var(--zoom, 1));
+                border-radius: 3px;
+            }
+            .web-card .img-body {
+                background: none;
+                position: relative;
+            }
+            .web-card .web-shield {
+                position: absolute;
+                inset: 0;
+                cursor: crosshair;
+            }
+            .web-card .img-foot {
+                background: var(--surface);
+                gap: 6px;
+            }
+            .web-card {
+                --ts-pill: var(--ts-img);
+            }
+            .web-card .web-badge {
+                flex-shrink: 0;
+                cursor: inherit;
+            }
+            .web-card.interacting {
+                outline: 2px solid var(--green);
+                outline-offset: 2px;
+            }
+            .web-card .web-interact.on {
+                color: #fff;
+                background: var(--green);
+            }
+            .web-frame {
+                position: absolute;
+                border: 0;
+                background: #fff;
+                transform-origin: 0 0;
+            }
+            /* interact mode: lift the page above everything so it gets the mouse */
+            .web-frame.interacting {
+                z-index: 5;
+            }
             .link-card .lk-row {
                 display: flex;
                 align-items: center;
@@ -3157,7 +3258,8 @@
                 position: absolute;
                 bottom: 18px;
                 height: 36px;
-                left: 50%;
+                /* centre over the visible canvas, not the window, so side panels never cover it */
+                left: calc((100% - var(--legend-w) - var(--map-w)) / 2);
                 transform: translateX(-50%);
                 display: flex;
                 align-items: center;
@@ -3173,7 +3275,7 @@
                     0 1px 2px var(--bg-canvas),
                     0 0 6px var(--bg-canvas);
                 white-space: nowrap;
-                max-width: 94vw;
+                max-width: calc(94vw - var(--legend-w) - var(--map-w));
             }
             @media (max-width: 640px) {
                 #hintToast {
@@ -3494,6 +3596,7 @@
                     <i style="left: 62%; top: 50%; width: 260px; height: 190px"></i>
                 </div>
                 <div id="canvasLayer">
+                    <div id="webLayer"></div>
                     <svg class="drawlayer" id="drawlayer"></svg>
                     <div id="nodesLayer"></div>
                 </div>
@@ -5493,7 +5596,7 @@
                 (cv.assets || []).forEach((a) => {
                     if (a.type === "text")
                         addRect(a.x, a.y, a.w || 200, a._measuredH || 30);
-                    else if (a.type === "image")
+                    else if (a.type === "image" || a.type === "web")
                         addRect(a.x, a.y, a.w || 200, a.h || 150);
                     else addRect(a.x, a.y, 200, 70);
                 });
@@ -5552,6 +5655,63 @@
 
             /* ============================================================ RENDER ============================================================ */
             const nodesLayer = document.getElementById("nodesLayer");
+            // Live sites: one iframe per asset id, kept across renders (render() wipes
+            // nodesLayer, and re-creating an iframe reloads the page)
+            const webLayer = document.getElementById("webLayer");
+            const webFrames = new Map();
+            const webInteracting = new Set();
+            let renderedWeb = [];
+            const WEB_ICONS = {
+                interact: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M10.1191 8.35352C10.3293 8.35098 10.4849 8.43109 10.5283 8.45312C10.594 8.48645 10.6641 8.53075 10.6992 8.55273L15.0605 11.2842L15.0791 11.2949L15.0781 11.2959C15.1199 11.322 15.183 11.3599 15.2354 11.3994C15.2694 11.4251 15.4217 11.5362 15.5137 11.7402L15.5488 11.833L15.5732 11.9326C15.6153 12.166 15.5579 12.4087 15.4121 12.5996C15.2449 12.8184 15.0149 12.8832 14.9678 12.8975C14.8953 12.9194 14.81 12.9366 14.7637 12.9463L12.9609 13.3223L11.8564 15.0527C11.8296 15.0948 11.783 15.1698 11.7363 15.2305C11.7086 15.2666 11.5626 15.4658 11.291 15.5439C11.0236 15.6208 10.7353 15.5614 10.5195 15.3857C10.3002 15.2071 10.2437 14.9669 10.2324 14.9229C10.2134 14.8488 10.1996 14.7622 10.1914 14.7129L9.31836 9.47363C9.31155 9.43278 9.29755 9.35157 9.29199 9.27832C9.28783 9.22316 9.26982 9.00188 9.39941 8.77734L9.45312 8.69531C9.5897 8.51166 9.79569 8.38927 10.0254 8.35938L10.1191 8.35352ZM5 1.25C5.41421 1.25 5.75 1.58579 5.75 2V2.75H10.25V2C10.25 1.80109 10.3291 1.61038 10.4697 1.46973C10.6104 1.32907 10.8011 1.25 11 1.25H14C14.4142 1.25 14.75 1.58579 14.75 2V5C14.75 5.19891 14.6709 5.38962 14.5303 5.53027C14.3896 5.67093 14.1989 5.75 14 5.75H13.25V7.5C13.25 7.91421 12.9142 8.25 12.5 8.25C12.0858 8.25 11.75 7.91421 11.75 7.5V5.75H11C10.5858 5.75 10.25 5.41421 10.25 5V4.25H5.75V5C5.75 5.41421 5.41421 5.75 5 5.75H4.25V10.25H5C5.41421 10.25 5.75 10.5858 5.75 11V11.75H7.5C7.91421 11.75 8.25 12.0858 8.25 12.5C8.25 12.9142 7.91421 13.25 7.5 13.25H5.75V14C5.75 14.4142 5.41421 14.75 5 14.75H2C1.58579 14.75 1.25 14.4142 1.25 14V11C1.25 10.5858 1.58579 10.25 2 10.25H2.75V5.75H2C1.58579 5.75 1.25 5.41421 1.25 5V2C1.25 1.58579 1.58579 1.25 2 1.25H5ZM12.7119 13.374C12.7107 13.3743 12.7102 13.3749 12.71 13.375C12.7104 13.3749 12.712 13.3745 12.7139 13.374L12.7158 13.373C12.7143 13.3734 12.713 13.3738 12.7119 13.374ZM2.75 13.25H4.25V11.75H2.75V13.25ZM2.75 4.25H4.25V2.75H2.75V4.25ZM11.75 4.25H13.25V2.75H11.75V4.25Z"/></svg>',
+                newWindow: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4.59961 4.25C5.01382 4.25 5.34961 4.58579 5.34961 5C5.34961 5.41421 5.01382 5.75 4.59961 5.75H4C3.86193 5.75 3.75 5.86193 3.75 6V12C3.75 12.1381 3.86193 12.25 4 12.25H10C10.1381 12.25 10.25 12.1381 10.25 12V11.4004C10.25 10.9862 10.5858 10.6504 11 10.6504C11.4142 10.6504 11.75 10.9862 11.75 11.4004V12C11.75 12.9665 10.9665 13.75 10 13.75H4C3.0335 13.75 2.25 12.9665 2.25 12V6C2.25 5.0335 3.0335 4.25 4 4.25H4.59961ZM12.9727 2.25C13.1715 2.25 13.3623 2.32911 13.5029 2.46973C13.6436 2.61038 13.7227 2.80109 13.7227 3V7C13.7227 7.41421 13.3869 7.75 12.9727 7.75C12.5585 7.74996 12.2227 7.41419 12.2227 7V4.81055L8.50293 8.53027C8.21003 8.82311 7.73526 8.82315 7.44238 8.53027C7.14956 8.23739 7.14956 7.76261 7.44238 7.46973L11.1621 3.75H8.82812C8.41391 3.75 8.07812 3.41421 8.07812 3C8.07813 2.58579 8.41391 2.25 8.82812 2.25H12.9727Z"/></svg>',
+                link: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8.96973 6.46997C9.26259 6.17716 9.73739 6.17719 10.0303 6.46997L10.1475 6.58618C11.4802 7.91908 11.4801 10.0804 10.1475 11.4133L8.28027 13.2805C6.7448 14.8157 4.2552 14.8157 2.71973 13.2805L2.46973 13.0305C1.07249 11.6331 1.07253 9.3674 2.46973 7.96997C2.76256 7.67724 3.23739 7.67732 3.53027 7.96997C3.82281 8.26286 3.82297 8.73773 3.53027 9.03052C2.71886 9.84216 2.71882 11.1584 3.53027 11.97L3.78027 12.22C4.72996 13.1694 6.27004 13.1694 7.21973 12.22L9.08691 10.3528C9.83372 9.60561 9.83383 8.39384 9.08691 7.64673L8.96973 7.53052C8.67698 7.23767 8.67704 6.76285 8.96973 6.46997ZM7.71973 2.71997C9.25522 1.18447 11.7447 1.18455 13.2803 2.71997L13.5303 2.96997C14.9275 4.36745 14.9277 6.63313 13.5303 8.03052C13.2374 8.32325 12.7626 8.32325 12.4697 8.03052C12.1769 7.73766 12.177 7.26287 12.4697 6.96997C13.2813 6.15837 13.2812 4.84221 12.4697 4.03052L12.2197 3.78052C11.27 2.83089 9.72998 2.83081 8.78027 3.78052L6.91309 5.64673C6.16615 6.39391 6.16708 7.60564 6.91406 8.35278L7.03125 8.46997C7.32341 8.76279 7.32357 9.2378 7.03125 9.53052C6.73856 9.82321 6.26365 9.8228 5.9707 9.53052L5.85352 9.41333C4.52074 8.0804 4.51982 5.91915 5.85254 4.58618L7.71973 2.71997Z"/></svg>',
+            };
+            const WEB_VW = 1278; // default page viewport: a 1280-wide card minus its border
+            function syncWebFrames() {
+                const keep = new Set();
+                renderedWeb.forEach((a) => {
+                    keep.add(a.id);
+                    let f = webFrames.get(a.id);
+                    if (!f || f.dataset.src !== a.url) {
+                        if (f) f.remove();
+                        f = document.createElement("iframe");
+                        f.className = "web-frame";
+                        f.dataset.src = a.url;
+                        f.src = a.url;
+                        f.title = a.label || a.url;
+                        f.referrerPolicy = "strict-origin-when-cross-origin";
+                        webLayer.appendChild(f);
+                        webFrames.set(a.id, f);
+                    }
+                    f.style.left = a.x + 1 + "px";
+                    f.style.top = a.y + 1 + "px";
+                    // The page always lays out at its own viewport width (a.vw) and is
+                    // scaled to fit the box, so resizing zooms the site rather than reflowing it
+                    const vw = a.vw || WEB_VW,
+                        k = ((a.w || 1280) - 2) / vw;
+                    f.style.width = vw + "px";
+                    f.style.height = ((a.h || 832) - IMG_CHROME_H) / k + "px";
+                    f.style.transform = `scale(${k})`;
+                    f.classList.toggle("interacting", webInteracting.has(a.id));
+                });
+                webFrames.forEach((f, id) => {
+                    if (keep.has(id)) return;
+                    f.remove();
+                    webFrames.delete(id);
+                    webInteracting.delete(id);
+                });
+            }
+            function setWebInteract(a, on) {
+                if (on) webInteracting.add(a.id);
+                else webInteracting.delete(a.id);
+                const el = domByObj.get(a);
+                if (el) {
+                    el.classList.toggle("interacting", on);
+                    const b = el.querySelector(".web-interact");
+                    if (b) b.classList.toggle("on", on);
+                }
+                syncWebFrames();
+            }
             const breadcrumbEl = document.getElementById("breadcrumb");
             const drawlayer = document.getElementById("drawlayer");
 
@@ -5590,7 +5750,7 @@
                             w: a.w || 200,
                             h: a._measuredH || 30,
                         };
-                    if (a.type === "image")
+                    if (a.type === "image" || a.type === "web")
                         return { x: a.x, y: a.y, w: a.w || 200, h: a.h || 150 };
                     return { x: a.x, y: a.y, w: 200, h: 70 }; // link card
                 }
@@ -5636,7 +5796,7 @@
                                   w: a.w || 200,
                                   h: a._measuredH || 30,
                               }
-                            : a.type === "image"
+                            : a.type === "image" || a.type === "web"
                               ? { x: a.x, y: a.y, w: a.w || 200, h: a.h || 150 }
                               : { x: a.x, y: a.y, w: 200, h: 70 };
                     if (
@@ -5680,7 +5840,7 @@
                             w: obj.w || 200,
                             h: obj._measuredH || 30,
                         };
-                    if (obj.type === "image")
+                    if (obj.type === "image" || obj.type === "web")
                         return {
                             x: obj.x,
                             y: obj.y,
@@ -5814,6 +5974,7 @@
                 lastRenderedPathKey = pathKey;
                 const cv = getCanvas(path);
                 nodesLayer.innerHTML = "";
+                renderedWeb = [];
                 drawlayer.innerHTML =
                     "<defs>" +
                     '<marker id="arrowhead-end" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#1B1A17"/></marker>' +
@@ -6293,7 +6454,7 @@
                         el.className = "asset-card link-card";
                         el.style.left = a.x + "px";
                         el.style.top = a.y + "px";
-                        el.innerHTML = `<div class="lk-row">${uiIcon("link")}link</div><span class="lk-title asset-label" title="Double-click to rename">${a.label}</span><div class="lk-url" title="Double-click to open">${a.url}</div>`;
+                        el.innerHTML = `<div class="lk-row">${uiIcon("link")}link<button class="lk-live" title="Show this page live on the canvas">show live</button></div><span class="lk-title asset-label" title="Double-click to rename">${a.label}</span><div class="lk-url" title="Double-click to open">${a.url}</div>`;
                         const lkLabelEl = el.querySelector(".lk-title");
                         lkLabelEl.addEventListener("pointerdown", (e) =>
                             e.stopPropagation(),
@@ -6322,6 +6483,119 @@
                             e.stopPropagation();
                             window.open(a.url, "_blank");
                         });
+                        const liveBtn = el.querySelector(".lk-live");
+                        liveBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
+                        liveBtn.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            pushUndo();
+                            a.type = "web";
+                            // desktop-sized viewport, so 1 canvas unit = 1 CSS px of the page
+                            a.w = a.w || 1280;
+                            a.vw = a.vw || a.w - 2;
+                            a.h = a.h || 800 + IMG_CHROME_H;
+                            render();
+                        });
+                    } else if (a.type === "web") {
+                        el = document.createElement("div");
+                        el.className = "asset-card image-card web-card";
+                        el.style.left = a.x + "px";
+                        el.style.top = a.y + "px";
+                        el.style.width = (a.w || 1280) + "px";
+                        el.style.height = (a.h || 832) + "px";
+                        const on = webInteracting.has(a.id);
+                        if (on) el.classList.add("interacting");
+                        el.innerHTML = `<div class="img-body"><div class="web-shield" title="Double-click to comment on this page"></div></div><div class="img-foot"><span class="badge-live web-badge"><span class="dot"></span>Live</span><span class="asset-label" title="Double-click to rename">${escHtml(a.label || a.url)}</span><button class="img-upload web-interact${on ? " on" : ""}" title="Interact with the page (click again to return to commenting)">${WEB_ICONS.interact}</button><button class="img-upload web-open" title="Open in new window">${WEB_ICONS.newWindow}</button><button class="img-upload web-unlive" title="Show as link card">${WEB_ICONS.link}</button></div><div class="web-resize" title="Drag to resize"></div>`;
+                        const stop = (b) => b.addEventListener("pointerdown", (e) => e.stopPropagation());
+                        const interactBtn = el.querySelector(".web-interact");
+                        const openBtn = el.querySelector(".web-open");
+                        const unliveBtn = el.querySelector(".web-unlive");
+                        [interactBtn, openBtn, unliveBtn].forEach(stop);
+                        interactBtn.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            setWebInteract(a, !webInteracting.has(a.id));
+                        });
+                        openBtn.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            window.open(a.url, "_blank", "noopener,noreferrer");
+                        });
+                        unliveBtn.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            pushUndo();
+                            a.type = "link";
+                            webInteracting.delete(a.id);
+                            render();
+                        });
+                        const webLabelEl = el.querySelector(".asset-label");
+                        const footEl = el.querySelector(".img-foot");
+                        // Double-click the page to drop a pin on it; double-click the footer to
+                        // rename. Listen on the card: the drag handler's pointer capture
+                        // retargets double-clicks here, so tell the two apart by position
+                        el.addEventListener("dblclick", (e) => {
+                            if (currentTool !== "select" || e.target.closest("button, .web-resize")) return;
+                            e.stopPropagation();
+                            if (e.clientY >= footEl.getBoundingClientRect().top) {
+                                webLabelEl.contentEditable = "true";
+                                webLabelEl.focus();
+                                document.execCommand("selectAll", false, null);
+                            } else openNewPin(e.clientX, e.clientY);
+                        });
+                        // footer (label included) is the drag handle; only while renaming
+                        // does the label keep the pointer for text selection
+                        webLabelEl.addEventListener("pointerdown", (e) => {
+                            if (webLabelEl.isContentEditable) e.stopPropagation();
+                        });
+                        const grip = el.querySelector(".web-resize");
+                        grip.addEventListener("pointerdown", (e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            grip.setPointerCapture(e.pointerId);
+                            const sx = e.clientX,
+                                sy = e.clientY,
+                                w0 = a.w || 1280,
+                                h0 = a.h || 832;
+                            let pushed = false;
+                            el.classList.add("resizing");
+                            const mv = (ev) => {
+                                // snap the far edges (not the size) so they line up with the grid
+                                const w = Math.max(320, Math.round(snapVal(a.x + w0 + (ev.clientX - sx) / zoom) - a.x));
+                                const h = Math.max(200 + IMG_CHROME_H, Math.round(snapVal(a.y + h0 + (ev.clientY - sy) / zoom) - a.y));
+                                if (w === a.w && h === a.h) return;
+                                if (!pushed) {
+                                    pushUndo();
+                                    pushed = true;
+                                }
+                                a.w = w;
+                                a.h = h;
+                                el.style.width = w + "px";
+                                el.style.height = h + "px";
+                                grip.dataset.size = `${Math.round(((w - 2) / (a.vw || WEB_VW)) * 100)}%`;
+                                syncWebFrames();
+                            };
+                            const up = () => {
+                                grip.removeEventListener("pointermove", mv);
+                                grip.removeEventListener("pointerup", up);
+                                grip.removeEventListener("pointercancel", up);
+                                el.classList.remove("resizing");
+                                if (pushed) render();
+                            };
+                            grip.addEventListener("pointermove", mv);
+                            grip.addEventListener("pointerup", up);
+                            grip.addEventListener("pointercancel", up);
+                        });
+                        webLabelEl.addEventListener("keydown", (e) => {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                webLabelEl.blur();
+                            }
+                        });
+                        webLabelEl.addEventListener("blur", () => {
+                            webLabelEl.contentEditable = "false";
+                            const nv = webLabelEl.textContent.trim();
+                            if (nv && nv !== a.label) {
+                                pushUndo();
+                                a.label = nv;
+                            }
+                        });
                     }
                     attachDragSelect(el, a);
                     attachConnectorAnchors(el, a);
@@ -6331,7 +6605,9 @@
                     if (a.type === "text") {
                         a._measuredH = el.offsetHeight;
                     }
+                    if (a.type === "web") renderedWeb.push(a);
                 });
+                syncWebFrames();
 
                 const visiblePins = [];
                 cv.pins.forEach((p) => {
@@ -7158,9 +7434,12 @@
                     e.stopPropagation();
                     el.setPointerCapture && el.setPointerCapture(e.pointerId);
                     // Jump screens only move when dragged by their top bar
-                    const canMove =
-                        !el.classList.contains("node") ||
-                        !!e.target.closest(".node-head");
+                    // Live sites only move when dragged by their footer
+                    const canMove = el.classList.contains("node")
+                        ? !!e.target.closest(".node-head")
+                        : el.classList.contains("web-card")
+                          ? !!e.target.closest(".img-foot")
+                          : true;
                     const startClientX = e.clientX,
                         startClientY = e.clientY,
                         origX = dataObj.x,
@@ -7205,6 +7484,7 @@
                                 el.style.left = dataObj.x + "px";
                                 el.style.top = dataObj.y + "px";
                             }
+                            if (renderedWeb.length) syncWebFrames();
                         }
                     };
                     const onUp = (ev) => {
@@ -8402,6 +8682,20 @@
                 true,
             );
 
+            // Clicking anywhere else on the canvas drops live sites back to comment mode.
+            // Capture phase, so cards that stop propagation still count.
+            viewportEl.addEventListener(
+                "pointerdown",
+                (e) => {
+                    if (!webInteracting.size || e.target.closest(".web-card")) return;
+                    [...webInteracting].forEach((id) => {
+                        const a = renderedWeb.find((w) => w.id === id);
+                        if (a) setWebInteract(a, false);
+                        else webInteracting.delete(id);
+                    });
+                },
+                true,
+            );
             viewportEl.addEventListener("pointerdown", (e) => {
                 const onInteractive =
                     !IS_MOBILE && e.target.closest(".node, .asset-card, .pin");
@@ -9433,8 +9727,8 @@
                     (node.assets || []).forEach((a) => {
                         if (a.type === "image")
                             rows.push({ ...base, cat: "image", type: "Image", icon: ICONS.image, name: a.label || "Untitled asset", ref: a });
-                        else if (a.type === "link")
-                            rows.push({ ...base, cat: "link", type: "Link", icon: ICONS.link, name: a.label || a.url, details: a.url || "", linkUrl: a.url, ref: a });
+                        else if (a.type === "link" || a.type === "web")
+                            rows.push({ ...base, cat: "link", type: a.type === "web" ? "Live site" : "Link", icon: ICONS.link, name: a.label || a.url, details: a.url || "", linkUrl: a.url, ref: a });
                         else
                             rows.push({ ...base, cat: "note", type: "Note", icon: ICONS.text, name: a.text || "", ref: a });
                     });
