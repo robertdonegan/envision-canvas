@@ -2573,6 +2573,51 @@
             body.hide-pin-labels .sprintchip {
                 display: none;
             }
+            .pin-comments {
+                display: none;
+                position: absolute;
+                left: 0;
+                top: 30px;
+                width: max-content;
+                max-width: 190px;
+                flex-direction: column;
+                gap: 2px;
+                pointer-events: none;
+                z-index: 4;
+            }
+            body.show-pin-comments .pin-comments {
+                display: flex;
+            }
+            .pin-comments .pcm {
+                font-family: var(--mono);
+                font-size: 9px;
+                line-height: 1.3;
+                color: var(--ink);
+                background: var(--surface);
+                border: 2px solid var(--pcc, var(--border-strong));
+                border-radius: 7px;
+                padding: 2px 6px;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                overflow-wrap: anywhere;
+            }
+            .pin-comments .pcm b {
+                font-weight: 700;
+                color: var(--ink-dim);
+            }
+            .pin-comments .pcm-more {
+                font-family: var(--mono);
+                font-size: 8.5px;
+                color: var(--ink-faint);
+                padding-left: 4px;
+            }
+            .legend-toggle.tight {
+                margin-bottom: 8px;
+                padding-bottom: 0;
+                border-bottom: none;
+            }
             .legend-toggle {
                 display: flex;
                 align-items: center;
@@ -3655,7 +3700,7 @@
                     <div
                         class="topbtn icon-only active"
                         id="legendBtn"
-                        title="Hide pin legend"
+                        title="Hide pin filters"
                     >
                         ▥
                     </div>
@@ -3884,7 +3929,7 @@
             </div>
 
             <aside id="overlayPanel">
-                <h2>Pin legend</h2>
+                <h2>Pin filters</h2>
                 <div id="overlayLegend"></div>
                 <div class="skel-list" aria-hidden="true">
                     <i style="width: 55%"></i><i style="width: 90%"></i><i style="width: 80%"></i><i style="width: 85%"></i><i style="width: 70%"></i><i style="width: 90%"></i>
@@ -3991,6 +4036,7 @@
                 <button role="menuitem" class="mm-mobile" data-action="table"><span class="mi-ico" data-mi="table"></span><span class="mi-t" data-for="table">List view</span></button>
                 <button role="menuitem" class="mm-mobile" data-action="sitemap"><span class="mi-ico" data-mi="sitemap"></span><span class="mi-t" data-for="sitemap">Sitemap</span></button>
                 <button role="menuitem" class="mm-mobile" data-action="pin-labels"><span class="mi-ico" data-mi="legend"></span><span class="mi-t" data-for="pin-labels">Pin labels</span></button>
+                <button role="menuitem" class="mm-mobile" data-action="pin-comments"><span class="mi-ico" data-mi="legend"></span><span class="mi-t" data-for="pin-comments">Pin comments</span></button>
                 <div class="mm-sep mm-mobile"></div>
                 <button role="menuitem" data-action="export-md"><span class="mi-ico" data-mi="download"></span>Export as Markdown</button>
                 <button role="menuitem" data-action="export-html"><span class="mi-ico" data-mi="download"></span>Export as HTML (with images)</button>
@@ -6974,6 +7020,31 @@
                         .filter(Boolean)
                         .join(" · ");
                     group.appendChild(chip);
+                    const thread = (p.comments || []).filter(
+                        (c) => c && c.text && String(c.text).trim(),
+                    );
+                    if (thread.length) {
+                        const box = document.createElement("div");
+                        box.className = "pin-comments";
+                        box.style.setProperty(
+                            "--pcc",
+                            overlayMode !== "type"
+                                ? overlayColor(pinOverlayKey(p, overlayMode))
+                                : `var(--pin-${pinColor(p.type, p.status)}, var(--border-strong))`,
+                        );
+                        const shown = thread.slice(-3);
+                        box.innerHTML =
+                            (thread.length > shown.length
+                                ? `<div class="pcm-more">+${thread.length - shown.length} earlier</div>`
+                                : "") +
+                            shown
+                                .map(
+                                    (c) =>
+                                        `<div class="pcm">${c.author ? `<b>${escHtml(c.author)}</b> ` : ""}${escHtml(String(c.text))}</div>`,
+                                )
+                                .join("");
+                        group.appendChild(box);
+                    }
                     nodesLayer.appendChild(group);
                 });
                 renderOverlayLegend(visiblePins);
@@ -9405,7 +9476,7 @@
                 document.body.classList.toggle("legend-hidden", !open);
                 const btn = document.getElementById("legendBtn");
                 btn.classList.toggle("active", open);
-                btn.title = open ? "Hide pin legend" : "Show pin legend";
+                btn.title = open ? "Hide pin filters" : "Show pin filters";
                 try {
                     localStorage.setItem("envision-legend-open", open ? "1" : "0");
                 } catch (e) {}
@@ -9423,6 +9494,10 @@
             } catch (e) {
                 document.body.classList.add("hide-pin-labels");
             }
+            try {
+                if (localStorage.getItem("envision-pin-comments") === "1")
+                    document.body.classList.add("show-pin-comments");
+            } catch (e) {}
             function setMapOpen(open) {
                 document.body.classList.toggle("map-open", open);
                 const btn = document.getElementById("mapBtn");
@@ -9758,7 +9833,9 @@
                 };
                 const labelsOn = !document.body.classList.contains("hide-pin-labels");
                 const toggle = `<div class="legend-toggle" id="pinLabelsToggle" role="switch" aria-checked="${labelsOn}" title="Show or hide the labels next to pins"><span>Pin labels</span><span class="legend-switch"></span></div>`;
-                legend.innerHTML = toggle + [
+                const commentsOn = document.body.classList.contains("show-pin-comments");
+                const toggle2 = `<div class="legend-toggle" id="pinCommentsToggle" role="switch" aria-checked="${commentsOn}" title="Show the comments from each pin next to it"><span>Pin comments</span><span class="legend-switch"></span></div>`;
+                legend.innerHTML = toggle.replace('class="legend-toggle"', 'class="legend-toggle tight"') + toggle2 + [
                     ["type", "By type"],
                     ["sprint", "By sprint"],
                     ["status", "By ADO status"],
@@ -9835,6 +9912,15 @@
                 render();
                 actionToast(`Renamed ${oldName} to ${next} (${n} item${n > 1 ? "s" : ""})`);
             }
+            function togglePinComments() {
+                const on = !document.body.classList.contains("show-pin-comments");
+                document.body.classList.toggle("show-pin-comments", on);
+                try {
+                    localStorage.setItem("envision-pin-comments", on ? "1" : "0");
+                } catch (err) {}
+                const t = document.getElementById("pinCommentsToggle");
+                if (t) t.setAttribute("aria-checked", String(on));
+            }
             function togglePinLabels() {
                 const hide = !document.body.classList.contains("hide-pin-labels");
                 document.body.classList.toggle("hide-pin-labels", hide);
@@ -9851,6 +9937,10 @@
                 .addEventListener("click", (e) => {
                     if (e.target.closest("#pinLabelsToggle")) {
                         togglePinLabels();
+                        return;
+                    }
+                    if (e.target.closest("#pinCommentsToggle")) {
+                        togglePinComments();
                         return;
                     }
                     const editBtn = e.target.closest(".legend-edit");
@@ -10585,6 +10675,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
                     lbl("table", tableView.hidden ? "List view" : "Hide list view");
                     lbl("sitemap", document.body.classList.contains("map-open") ? "Hide sitemap" : "Sitemap");
                     lbl("pin-labels", document.body.classList.contains("hide-pin-labels") ? "Show pin labels" : "Hide pin labels");
+                    lbl("pin-comments", document.body.classList.contains("show-pin-comments") ? "Hide pin comments" : "Show pin comments");
                 }
                 moreBtn.classList.toggle("active", open);
                 moreBtn.setAttribute("aria-expanded", String(open));
@@ -10650,6 +10741,9 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
                         break;
                     case "pin-labels":
                         togglePinLabels();
+                        break;
+                    case "pin-comments":
+                        togglePinComments();
                         break;
                 }
             });
